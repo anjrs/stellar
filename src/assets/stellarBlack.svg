@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Calque_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 591.63 68.28">
+  <defs>
+    <style>
+      .cls-1 {
+        font-family: CrocoTears-Black, 'Croco Tears';
+        font-size: 57.82px;
+        font-weight: 800;
+      }
+
+      .cls-2 {
+        letter-spacing: .23em;
+      }
+
+      .cls-3 {
+        letter-spacing: .04em;
+      }
+
+      .cls-4 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-5 {
+        letter-spacing: .24em;
+      }
+
+      .cls-6 {
+        letter-spacing: 0em;
+      }
+
+      .cls-7 {
+        letter-spacing: .18em;
+      }
+    </style>
+  </defs>
+  <text class="cls-1" transform="translate(19.61 50.22)"><tspan class="cls-5" x="0" y="0">ST</tspan><tspan class="cls-4" x="149.58" y="0">E</tspan><tspan class="cls-7" x="205.44" y="0">L</tspan><tspan class="cls-2" x="266.38" y="0">L</tspan><tspan class="cls-3" x="330.22" y="0">A</tspan><tspan class="cls-2" x="388.33" y="0">R</tspan><tspan class="cls-7" x="462.74" y="0"> </tspan><tspan class="cls-6" x="491.65" y="0">Z</tspan></text>
+</svg>
