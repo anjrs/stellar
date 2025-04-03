@@ -48,11 +48,14 @@ const velo = "/assets/velo.png"; // Corrige le chemin
 }
 
 .title {
+    font-family: "Along Sans s2";
     font-size: 2vw;
     font-weight: bold;
+    color: chartreuse;
 }
 
 .description {
+    font-family: "Anton";
     font-size: 1.2vw;
     line-height: 1.5;
 }
