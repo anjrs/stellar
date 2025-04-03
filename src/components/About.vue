@@ -34,30 +34,35 @@ const velo = "/assets/velo.png"; // Corrige le chemin
 }
 
 /* Section texte */
-.text {
+.text
+{
     width: 55%;
     color: white;
     display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 2rem; /* Espace entre les blocs de texte */
+    padding-left: 5%; /* Décalage vers la droite */
+    text-align: left; /* Alignement du texte à gauche */
 }
 
 .text-content {
     max-width: 80%;
 }
 
-.title {
+.title
+{
     font-family: "Along Sans s2";
     font-size: 2vw;
     font-weight: bold;
-    color: chartreuse;
+    color: #B1FF36;
 }
 
 .description {
     font-family: "Anton";
     font-size: 1.2vw;
     line-height: 1.5;
+    text-align: left;
 }
 
 /* Section image */
