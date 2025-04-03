@@ -12,7 +12,7 @@
   
   .custom-button {
   font-family: "AktivGrotesk-Regular", sans-serif;
-  font-size: 18px;  /* Augmentation de la taille du texte */
+  font-size: 24px;  /* Augmentation de la taille du texte */
   color: #B1FF36;
   background-color: transparent;
   border: 3px solid #B1FF36;  /* Augmentation de l'épaisseur du bord */
@@ -27,7 +27,8 @@
 
   
   .custom-button:hover {
-    background-color: rgba(177, 255, 54, 0.2); /* Effet léger au hover */
+    background-color: #B1FF36; /* Effet léger au hover */
+    color: #000; /* Changement de couleur du texte au hover */
   }
   </style>
   

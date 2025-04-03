@@ -34,8 +34,8 @@ import VideoSection from './components/VideoSection.vue';
 /* Fixer le bouton en bas à gauche */
 .custom-button {
   position: fixed;
-  bottom: 20px; /* Décalage du bas de l'écran */
-  right: 20px; /* Décalage du côté gauche de l'écran */
+  bottom: 120px; /* Décalage du bas de l'écran */
+  right: 100px; /* Décalage du côté gauche de l'écran */
   z-index: 9999; /* S'assurer que le bouton soit au premier plan */
 }
 </style>
