@@ -26,7 +26,8 @@
 }
 
   
-  .custom-button:hover {
+  .custom-button:hover
+  {
     background-color: #B1FF36; /* Effet léger au hover */
     color: #000; /* Changement de couleur du texte au hover */
   }

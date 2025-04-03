@@ -3,6 +3,8 @@ import Acceuil from './components/Accueil.vue'
 import Bouton from './components/Bouton.vue'
 import Caracteristique from './components/Caracteristique.vue';
 import VideoSection from './components/VideoSection.vue';
+import About from './components/About.vue';
+
 </script>
 
 <template>
@@ -18,6 +20,8 @@ import VideoSection from './components/VideoSection.vue';
     <!-- Caractéristiques -->
     <Caracteristique />
     
+    <!-- about -->
+     <About />
     <!-- Vidéo -->
     <VideoSection />
   </div>
