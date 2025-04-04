@@ -1,4 +1,5 @@
 <script setup>
+import Header from './Header.vue';
   // Utilise directement les chemins d'images
   const starBlack = "/assets/starBlack.svg";
   const stellarBlack = "/assets/stellarBlack.svg";
@@ -6,17 +7,7 @@
 
 <template>
   <div class="home">
-    <div class="header">
-      <img :src="starBlack" alt="star" class="icon" />
-      <img :src="stellarBlack" alt="stellarBlack" class="icon" />
-
-      <div class="pages">
-        <router-link to="/produits">NOS PRODUITS</router-link>
-        <router-link to="/admin">ADMIN</router-link>
-
-      </div>
-    
-    </div>
+    <Header />
     <div class="imageEclair"></div>
   </div>
 </template>
