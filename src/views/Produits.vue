@@ -1,6 +1,9 @@
 <script scoped>
 import Header from '../components/Header.vue'
 import CarteProduit from '../components/CarteProduit.vue';
+import Champ from '../components/Champ.vue';
+
+
 
 
 export default
@@ -18,6 +21,9 @@ export default
     <Header />
 
     <div class="container">
+        <div class="searchBar">
+            <Champ placeholder="Rechercher un produit" type="text" />
+        </div>
         <div class="carteContainer">
             <CarteProduit :imageSrc="'/assets/produit1.jpg'">
                 <template #categorie>
@@ -63,20 +69,49 @@ export default
 .container {
     width: 100vw;
     height: 100vh;
-    padding-top: 70px; /* Pour éviter que le contenu soit caché par le header */
+    padding-top: 70px; /* Évite que le contenu soit caché par le header */
     background-color: black;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
-    justify-content: start; /* Pour que le header reste en haut */
+    justify-content: flex-start; /* Aligne tout en haut */
+}
+
+.searchBar {
+    font-family: "AktivGrotesk-Regular", sans-serif;
+    font-size: 16px;
+    color: #B1FF36;
+    background-color: transparent;
+    border: 3px solid #B1FF36;
+    border-radius: 30px;
+    padding: 10px 20px;
+    cursor: text;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 300px; /* Largeur ajustable */
+    margin-bottom: 20px; /* Espace entre la barre de recherche et les cartes */
+    align-self: flex-start; /* Place la barre à gauche */
+    margin-left: 5%; /* Ajuste la position à gauche */
 }
 
 .carteContainer {
-    width: 100%;
-    height: 100%;
+    width: 90%;
     display: flex;
-    flex-wrap: wrap; /* Permet d'avoir plusieurs cartes sur une ligne */
+    flex-wrap: wrap;
     justify-content: center; /* Centre les cartes horizontalement */
     gap: 40px; /* Espace entre les cartes */
 }
+
+.champs
+{
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 10%;
+}
+
 </style>

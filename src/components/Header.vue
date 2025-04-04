@@ -9,6 +9,7 @@
       <img :src="stellarBlack" alt="stellarBlack" class="icon" />
 
       <div class="pages">
+        <router-link to="/">ACCUEIL</router-link>
         <router-link to="/produits">NOS PRODUITS</router-link>
         <router-link to="/admin">ADMIN</router-link>
         </div>
