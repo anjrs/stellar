@@ -12,6 +12,8 @@
         <router-link to="/">ACCUEIL</router-link>
         <router-link to="/produits">NOS PRODUITS</router-link>
         <router-link to="/admin">ADMIN</router-link>
+        <router-link to="/admin">PANIER</router-link>
+
         </div>
     </div>
     
