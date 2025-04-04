@@ -22,16 +22,6 @@
 </template>
 
 <style scoped>
-/* HEADER - Contient les icônes */
-.header {
-  width: 90%;
-  height: 20vh;
-  display: flex;
-  justify-content: left;
-  align-items: center;
-  gap: 20px;
-}
-
 /* HOME - Conteneur principal */
 .home {
   width: 100vw;
@@ -52,23 +42,7 @@
   background-position: center;
 }
 
-/* ICONES */
-.icon
-{
-  height: 60%; /* Remplit presque tout le header */
-  max-height: 90%;
-  width: auto;
-}
 
-.pages {
-  font-family: "Along Sans s2";
-  font-size: 1vw;
-  color: black;
-  display: flex;
-  margin-left: auto;
-  justify-content: flex-end; /* Aligne à droite */
-  padding-right: 3vw; /* Décalage vers la droite */
-}
 
 /* i miss u too */
 </style>
