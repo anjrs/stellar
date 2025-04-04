@@ -76,3 +76,5 @@ const stellarWhite = ref("/assets/stellarWhite.svg");
     margin-top: 10%;
 }
 </style>
+curl -X GET "http://localhost:7979/dolibarr/api/index.php/products" -H "DOLAPIKEY: 8a8MsnQGo371to4oVLWk552rIhNUFIt8" -H "Accept: application/json"
+

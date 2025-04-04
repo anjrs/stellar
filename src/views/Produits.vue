@@ -2,6 +2,7 @@
 import Header from '../components/Header.vue'
 import CarteProduit from '../components/CarteProduit.vue';
 import Champ from '../components/Champ.vue';
+import Bouton from '../components/Bouton.vue';
 
 
 
@@ -12,7 +13,8 @@ export default
     components:
     {
         Header,
-        CarteProduit
+        CarteProduit,
+        Bouton
     }
 }
 </script>
@@ -21,9 +23,15 @@ export default
     <Header />
 
     <div class="container">
-        <div class="searchBar">
-            <Champ placeholder="Rechercher un produit" type="text" class="champs"/>
+        <div class="rechercheEtBouton">
+            <div class="searchBar">
+                <Champ placeholder="Rechercher un produit" type="text" class="champs"/>
+            </div>
+            <Bouton class="bouton">
+                RECHERCHER
+            </Bouton>
         </div>
+        
         <div class="carteContainer">
             <CarteProduit :imageSrc="'/assets/produit1.jpg'">
                 <template #categorie>
@@ -76,6 +84,16 @@ export default
     align-items: center;
     justify-content: flex-start; /* Aligne tout en haut */
 }
+.rechercheEtBouton {
+    width: 100%;
+    display: flex;
+    flex-direction: row; /* Aligne les éléments horizontalement */
+    /* Aligne les éléments à gauche */
+    align-items: center; /* Aligne verticalement les éléments */
+    gap: 20px; /* Espace entre la barre de recherche et le bouton */
+    margin-left: 10%;
+    margin-bottom: 40px;
+}
 
 .searchBar {
     font-family: "AktivGrotesk-Regular", sans-serif;
@@ -91,10 +109,9 @@ export default
     justify-content: flex-start;
     transition: all 0.3s ease;
     width: 90%;
+    height: 30px; /* Hauteur ajustable */
     max-width: 500px; /* Largeur ajustable */
-    margin-bottom: 20px; /* Espace entre la barre de recherche et les cartes */
-    align-self: flex-start; /* Place la barre à gauche */
-    margin-left: 5%; /* Ajuste la position à gauche */
+    margin-left: 0; /* Ajuste la position à gauche */
 }
 
 .carteContainer {
@@ -113,5 +130,7 @@ export default
     gap: 20px;
     margin-top: 10%;
 }
+
+
 
 </style>

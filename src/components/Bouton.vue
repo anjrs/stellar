@@ -12,7 +12,7 @@
   
   .custom-button {
   font-family: "AktivGrotesk-Regular", sans-serif;
-  font-size: 24px;  /* Augmentation de la taille du texte */
+  font-size:16px;  /* Augmentation de la taille du texte */
   color: #B1FF36;
   background-color: transparent;
   border: 3px solid #B1FF36;  /* Augmentation de l'épaisseur du bord */
