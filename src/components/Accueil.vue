@@ -9,6 +9,13 @@
     <div class="header">
       <img :src="starBlack" alt="star" class="icon" />
       <img :src="stellarBlack" alt="stellarBlack" class="icon" />
+
+      <div class="pages">
+        <router-link to="/produits">NOS PRODUITS</router-link>
+        <router-link to="/admin">ADMIN</router-link>
+
+      </div>
+    
     </div>
     <div class="imageEclair"></div>
   </div>
@@ -17,10 +24,10 @@
 <style scoped>
 /* HEADER - Contient les icônes */
 .header {
-  width: 100%;
+  width: 90%;
   height: 20vh;
   display: flex;
-  justify-content: center;
+  justify-content: left;
   align-items: center;
   gap: 20px;
 }
@@ -46,12 +53,22 @@
 }
 
 /* ICONES */
-.icon {
-  height: 80%; /* Remplit presque tout le header */
-  max-height: 100%;
+.icon
+{
+  height: 60%; /* Remplit presque tout le header */
+  max-height: 90%;
   width: auto;
 }
- 
+
+.pages {
+  font-family: "Along Sans s2";
+  font-size: 1vw;
+  color: black;
+  display: flex;
+  margin-left: auto;
+  justify-content: flex-end; /* Aligne à droite */
+  padding-right: 3vw; /* Décalage vers la droite */
+}
 
 /* i miss u too */
 </style>
