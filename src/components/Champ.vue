@@ -62,6 +62,6 @@ defineProps({
 
 .custom-input:focus
 {
-  border-color: white;
+  border-color: rgb(255, 255, 255);
 }
 </style>
