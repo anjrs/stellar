@@ -22,7 +22,7 @@ export default
 
     <div class="container">
         <div class="searchBar">
-            <Champ placeholder="Rechercher un produit" type="text" />
+            <Champ placeholder="Rechercher un produit" type="text" class="champs"/>
         </div>
         <div class="carteContainer">
             <CarteProduit :imageSrc="'/assets/produit1.jpg'">
@@ -90,8 +90,8 @@ export default
     align-items: center;
     justify-content: flex-start;
     transition: all 0.3s ease;
-    width: 100%;
-    max-width: 300px; /* Largeur ajustable */
+    width: 90%;
+    max-width: 500px; /* Largeur ajustable */
     margin-bottom: 20px; /* Espace entre la barre de recherche et les cartes */
     align-self: flex-start; /* Place la barre à gauche */
     margin-left: 5%; /* Ajuste la position à gauche */
@@ -107,7 +107,7 @@ export default
 
 .champs
 {
-    width: 50%;
+    width: 80%;
     display: flex;
     flex-direction: column;
     gap: 20px;
