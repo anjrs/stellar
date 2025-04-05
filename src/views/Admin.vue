@@ -2,6 +2,7 @@
 import Champ from '../components/Champ.vue'
 import Bouton from '../components/Bouton.vue'
 import { ref } from 'vue'
+import router from '../router';
 
 const stellarWhite = ref("/assets/stellarWhite.svg");
 </script>
@@ -14,11 +15,15 @@ const stellarWhite = ref("/assets/stellarWhite.svg");
             </div>
 
             <div class="champs">
-                <Champ label="Identifiant" placeholder="Entrez votre id" />
+                <Champ label="E-mail" placeholder="Entrez votre adresse e-mail" />
                 <Champ label="Mot de passe" type="password" placeholder="Entrez votre mot de passe" />
                 <Bouton class="custom-button">
                     SE CONNECTER
                 </Bouton>
+            
+                <router-link to="/inscription" class="inscription-link">
+                    Pas encore inscrit ? Créez un compte ici !
+                </router-link>
             </div>
         </div>
     </div>

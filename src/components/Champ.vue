@@ -5,7 +5,8 @@ defineProps({
     type: String,
     default: "text" // Type par défaut : texte
   },
-  placeholder: String // Texte indicatif dans le champ
+  placeholder: String,
+  name: String // Texte indicatif dans le champ
 });
 </script>
 
@@ -15,6 +16,7 @@ defineProps({
       <input 
         :type="type" 
         :placeholder="placeholder"
+        :name="name"
         class="custom-input" 
       />
     </div>

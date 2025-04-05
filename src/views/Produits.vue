@@ -3,9 +3,7 @@ import Header from '../components/Header.vue'
 import CarteProduit from '../components/CarteProduit.vue';
 import Champ from '../components/Champ.vue';
 import Bouton from '../components/Bouton.vue';
-
-
-
+import axios from 'axios'
 
 export default
 {
@@ -15,7 +13,39 @@ export default
         Header,
         CarteProduit,
         Bouton
+    },
+    data()
+    {
+        return {
+            produits: []
+        };
+    },
+    mounted()
+    {
+        this.getProduit();
+    },
+    methods:
+    {
+    async getProduit()
+    {
+      try
+      {
+        const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/products',
+        {
+          headers:
+          {
+            'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+            'Accept': 'application/json'
+          }
+        })
+        this.produits = response.data
+      } 
+      catch (error)
+      {
+        console.error('Erreur lors de la récupération des produits:', error)
+      }
     }
+  }
 }
 </script>
 
@@ -33,41 +63,22 @@ export default
         </div>
         
         <div class="carteContainer">
-            <CarteProduit :imageSrc="'/assets/produit1.jpg'">
+            <CarteProduit
+                v-for="produit in produits"
+                :key="produit.id"
+                :imageSrc="'/assets/produit1.jpg'" 
+            >
                 <template #categorie>
-                    Électronique
+                    {{ produit.description }}
                 </template>
                 <template #nom>
-                    SMARTPHONE XYZ
+                    {{ produit.label }}
                 </template>
                 <template #prix>
-                    20000 Ariary
+                    {{ parseFloat(produit.price).toLocaleString() }} Ariary
                 </template>
             </CarteProduit>
 
-            <CarteProduit :imageSrc="'/assets/produit1.jpg'">
-                <template #categorie>
-                    Électronique
-                </template>
-                <template #nom>
-                    SMARTPHONE XYZ
-                </template>
-                <template #prix>
-                    20000 Ariary
-                </template>
-            </CarteProduit>
-
-            <CarteProduit :imageSrc="'/assets/produit1.jpg'">
-                <template #categorie>
-                    Électronique
-                </template>
-                <template #nom>
-                    SMARTPHONE XYZ
-                </template>
-                <template #prix>
-                    20000 Ariary
-                </template>
-            </CarteProduit>
         </div>
         
     </div>
