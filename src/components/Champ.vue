@@ -6,7 +6,8 @@ defineProps({
     default: "text" // Type par défaut : texte
   },
   placeholder: String,
-  name: String // Texte indicatif dans le champ
+  name: String,
+  modelValue: String, // Texte indicatif dans le champ
 });
 </script>
 
@@ -18,6 +19,8 @@ defineProps({
         :placeholder="placeholder"
         :name="name"
         class="custom-input" 
+        :value="modelValue" 
+        @input="$emit('update:modelValue', $event.target.value)"
       />
     </div>
   </template>
