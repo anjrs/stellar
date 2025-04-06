@@ -2,31 +2,79 @@
 import Champ from '../components/Champ.vue'
 import Bouton from '../components/Bouton.vue'
 import { ref } from 'vue'
-import router from '../router';
+import { useRouter } from 'vue-router'
+import axios from 'axios'
 
-const stellarWhite = ref("/assets/stellarWhite.svg");
+const router = useRouter()
+const stellarWhite = ref("/assets/stellarWhite.svg")
+
+const email = ref('')
+const password = ref('')
+const erreur = ref('') // Pour afficher un message en cas d’échec
+
+const seConnecter = async () =>
+{
+  try
+  {
+    const response = await axios.get("http://localhost:7979/dolibarr/htdocs/api/index.php/thirdparties", {
+      headers: {
+        'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+        'Accept': 'application/json'
+      }
+    })
+    const tiers = response.data
+    const utilisateurExiste = tiers.some(tier => tier.email === email.value)
+
+    if (utilisateurExiste)
+    {
+        localStorage.setItem('emailConnecte', email.value)  // ⬅️ Stocke l'e-mail
+        router.push('/produits')
+    }
+    else
+    {
+      erreur.value = 'E-mail incorrect ou utilisateur introuvable.'
+    }
+  } 
+  catch (err)
+  {
+    console.error('Erreur API :', err)
+    erreur.value = 'Erreur de connexion. Veuillez réessayer.'
+  }
+}
 </script>
 
 <template>
-    <div class="container">
-        <div class="formulaire">
-            <div class="logo">
-                <img :src="stellarWhite" alt="star" class="icon" />
-            </div>
+  <div class="container">
+    <div class="formulaire">
+      <div class="logo">
+        <img :src="stellarWhite" alt="star" class="icon" />
+      </div>
 
-            <div class="champs">
-                <Champ label="E-mail" placeholder="Entrez votre adresse e-mail" />
-                <Champ label="Mot de passe" type="password" placeholder="Entrez votre mot de passe" />
-                <Bouton class="custom-button">
-                    SE CONNECTER
-                </Bouton>
-            
-                <router-link to="/inscription" class="inscription-link">
-                    Pas encore inscrit ? Créez un compte ici !
-                </router-link>
-            </div>
-        </div>
+      <div class="champs">
+        <Champ 
+          label="E-mail" 
+          type="text"
+          v-model="email"
+          placeholder="Entrez votre adresse e-mail" 
+        />
+        <Champ 
+          label="Mot de passe" 
+          type="password" 
+          v-model="password"
+          placeholder="Entrez votre mot de passe" 
+        />
+        <Bouton class="custom-button" @click="seConnecter">
+          SE CONNECTER
+        </Bouton>
+
+        <p v-if="erreur" style="color: red; text-align: center">{{ erreur }}</p>
+
+        <router-link to="/inscription" class="inscription-link">
+          Pas encore inscrit ? Créez un compte ici !
+        </router-link>
+      </div>
     </div>
+  </div>
 </template>
 
 <style scoped>

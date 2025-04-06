@@ -5,54 +5,87 @@ import Champ from '../components/Champ.vue';
 import Bouton from '../components/Bouton.vue';
 import axios from 'axios'
 
-export default
-{
-    name: 'Produits',
-    components:
+export default {
+  name: 'Produits',
+  components: {
+    Header,
+    CarteProduit,
+    Bouton
+  },
+  data()
+  {
+    return {
+      produits: [],
+      emailConnecte: '' ,
+      tiersName: '', // Pour stocker le nom du tiers
+    };
+  },
+  mounted()
+  {
+    this.emailConnecte = localStorage.getItem('emailConnecte');
+    if (this.emailConnecte)
     {
-        Header,
-        CarteProduit,
-        Bouton
-    },
-    data()
-    {
-        return {
-            produits: []
-        };
-    },
-    mounted()
-    {
-        this.getProduit();
-    },
-    methods:
-    {
+        this.getTiersIdByEmail(this.emailConnecte); // Appel de la méthode avec l'email
+    } //  Récupère l'e-mail stocké
+    this.getProduit();
+  },
+  methods:
+  {
+    //select produits
     async getProduit()
     {
-      try
-      {
-        const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/products',
-        {
-          headers:
-          {
+      try {
+        const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/products', {
+          headers: {
             'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
             'Accept': 'application/json'
           }
         })
         this.produits = response.data
-      } 
-      catch (error)
-      {
+      } catch (error) {
         console.error('Erreur lors de la récupération des produits:', error)
       }
+    },
+    async getTiersIdByEmail(email)
+    {
+      try
+      {
+        // Récupérer tous les tiers
+        const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/thirdparties', {
+          headers: {
+            'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+            'Accept': 'application/json'
+          }
+        });
+
+         // Filtrer les tiers par email
+        const tiers = response.data;
+        const foundTiers = tiers.find(tier => tier.email === email);
+        
+        if (foundTiers)
+        {
+          localStorage.setItem('tiersName',foundTiers.name);
+          this.tiersName = foundTiers.name;  // Stocker l'ID du tiers
+          console.log("Client trouvé :", this.tiersName);
+        } else {
+          console.log("Aucun tiers trouvé avec cet email.");
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération des tiers:', error);
+      }
     }
-  }
-}
+  },
+  
+  };
 </script>
 
 <template>
     <Header />
-
     <div class="container">
+        <div class="texte">
+            <h1>Bienvenue {{ tiersName }}</h1> 
+            <h2>Découvrez nos produits</h2>
+        </div>
         <div class="rechercheEtBouton">
             <div class="searchBar">
                 <Champ placeholder="Rechercher un produit" type="text" class="champs"/>
@@ -61,7 +94,6 @@ export default
                 RECHERCHER
             </Bouton>
         </div>
-        
         <div class="carteContainer">
             <CarteProduit
                 v-for="produit in produits"
@@ -94,6 +126,35 @@ export default
     flex-direction: column;
     align-items: center;
     justify-content: flex-start; /* Aligne tout en haut */
+}
+.texte {
+    text-align: center; /* Centre le texte horizontalement */
+    margin-bottom: 20px; /* Espace sous le bloc texte */
+}
+
+.texte h1 {
+    font-family: "AktivGrotesk-Regular", sans-serif; /* Police personnalisée */
+    font-size: 36px; /* Taille du texte */
+    color: #B1FF36; /* Couleur verte */
+    margin-bottom: 10px; /* Espace sous le titre */
+    text-transform: uppercase; /* Met le texte en majuscules */
+    letter-spacing: 2px; /* Espacement entre les lettres */
+}
+
+.texte h2 {
+    font-family: "AktivGrotesk-Regular", sans-serif; /* Police personnalisée */
+    font-size: 24px; /* Taille du texte */
+    color: #FFFFFF; /* Couleur blanche */
+    margin-bottom: 20px; /* Espace sous le sous-titre */
+    font-weight: 300; /* Poids de la police plus léger */
+}
+
+.texte p {
+    font-family: "AktivGrotesk-Regular", sans-serif; /* Police personnalisée */
+    font-size: 18px; /* Taille du texte */
+    color: #CCCCCC; /* Couleur grise */
+    line-height: 1.6; /* Hauteur de ligne pour améliorer la lisibilité */
+    margin-bottom: 15px; /* Espace sous le paragraphe */
 }
 .rechercheEtBouton {
     width: 100%;

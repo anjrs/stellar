@@ -16,4 +16,4 @@ DELETE FROM llx_propal WHERE date_creation >= NOW() - INTERVAL 1 DAY;
 DELETE FROM llx_actioncomm WHERE date_creation >= NOW() - INTERVAL 1 DAY;
 
 
-curl -X GET "http://localhost:7979/dolibarr/htdocs/api/index.php/thirdparties" -H "DOLAPIKEY: 8a8MsnQGo371to4oVLWk552rIhNUFIt8" -H "Accept: application/json"
+curl -X GET "http://localhost:7979/dolibarr/htdocs/api/index.php/orders" -H "DOLAPIKEY: 8a8MsnQGo371to4oVLWk552rIhNUFIt8" -H "Accept: application/json"

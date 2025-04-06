@@ -11,7 +11,8 @@ export default {
         Champ,
         Bouton
     },
-    setup() {
+    setup()
+    {
         const stellarWhite = ref("/assets/stellarWhite.svg");
         const router = useRouter();
 
@@ -19,46 +20,93 @@ export default {
         const email = ref('');
         const phone = ref('');
 
-        const submitForm = async () => {
-            if (!name.value || !email.value || !phone.value) {
-                alert('Veuillez remplir tous les champs.');
-                return;
-            }
-            console.log('Bouton cliqué');
-            const data = {
-                name: name.value,
-                client: 1,
-                status: 1,
-                email: email.value,
-                phone_pro: phone.value
-            };
+        //creation d un panier
+        const creerPanier = async () =>
+        {
+            try
+            {
+                const data = {
+                    ref_client: name.value, // Référence client
+                    socid: 4, // ID du client (remplacez par l'ID réel)
+                    date: new Date().toISOString().split('T')[0], // Date de la commande
+                    lines: [] // Lignes de commande (vide pour l'instant)
+                };
 
-            console.log('Données envoyées :', data);
+                console.log('Création du panier avec les données :', data);
 
-            try {
-                const response = await axios.post('http://localhost:7979/dolibarr/htdocs/api/index.php/thirdparties', data, {
-                    headers: {
-                        'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-                        'Content-Type': 'application/json'
-                    }
-                });
-                console.log('Données envoyées avec succès :', response.data);
-                alert('Inscription réussie !');
-                router.push('/produits');
-            } catch (error) {
-                if (error.response) {
-                    console.error('Erreur lors de l\'envoi des données :', error.response.data);
-                    alert(`Erreur : ${error.response.data.error || 'Une erreur est survenue.'}`);
-                } else if (error.request) {
-                    console.error('Aucune réponse reçue :', error.request);
-                    alert('Le serveur ne répond pas.');
-                } else {
-                    console.error('Erreur :', error.message);
-                    alert('Une erreur est survenue lors de la configuration de la requête.');
+            const response = await axios.post('http://localhost:7979/dolibarr/htdocs/api/index.php/orders', data,   {
+                headers:
+                {
+                    'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+                    'Content-Type': 'application/json'
                 }
+            });
+            console.log('Panier créé avec succès :', response.data);
+            // alert('Panier créé avec succès !');
+        } 
+        catch (error)
+        {
+            if (error.response) {
+                console.error('Erreur lors de la création du panier :', error.response.data);
+                alert(`Erreur : ${error.response.data.error || 'Une erreur est survenue.'}`);
+            } else if (error.request) {
+                console.error('Aucune réponse reçue :', error.request);
+                alert('Le serveur ne répond pas.');
+            } else {
+                console.error('Erreur :', error.message);
+                alert('Une erreur est survenue lors de la configuration de la requête.');
             }
-        };
+        }
+    };
 
+    const submitForm = async () =>
+    {
+        if (!name.value || !email.value || !phone.value) {
+            alert('Veuillez remplir tous les champs.');
+            return;
+        }
+        console.log('Bouton cliqué');
+        const data =
+        {
+            name: name.value,
+            client: 1,
+            status: 1,
+            email: email.value,
+            phone_pro: phone.value
+        };
+        console.log('Données envoyées :', data);
+
+        try
+        {
+            const response = await axios.post('http://localhost:7979/dolibarr/htdocs/api/index.php/thirdparties', data, {
+                headers:
+                {
+                    'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log('Données envoyées avec succès :', response.data);
+            alert('Inscription réussie !');
+
+            // Appeler creerPanier avec l'ID du client
+            const clientId = response.data.id; // Récupérer l'ID du client
+            await creerPanier(clientId);
+            router.push('/produits');
+        } 
+        catch (error)
+        {
+            if (error.response) {
+                console.error('Erreur lors de l\'envoi des données :', error.response.data);
+                alert(`Erreur : ${error.response.data.error || 'Une erreur est survenue.'}`);
+            } else if (error.request) {
+                console.error('Aucune réponse reçue :', error.request);
+                alert('Le serveur ne répond pas.');
+            } else {
+                console.error('Erreur :', error.message);
+                alert('Une erreur est survenue lors de la configuration de la requête.');
+            }
+        }
+    };
         return {
             stellarWhite,
             name,

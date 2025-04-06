@@ -1,5 +1,6 @@
 <script>
-import Header from '../components/Header.vue'
+import Header from '../components/Header.vue';
+import axios from 'axios';
 
 export default {
   name: 'Panier',
@@ -8,69 +9,157 @@ export default {
   },
   data() {
     return {
-      panier: [
-        {
-          id: 1,
-          nom: 'Produit A',
-          prix: 10000,
-          quantite: 1,
-          image: 'https://via.placeholder.com/80'
-        },
-        {
-          id: 2,
-          nom: 'Produit B',
-          prix: 15000,
-          quantite: 2,
-          image: 'https://via.placeholder.com/80'
-        }
-      ]
-    }
+      details: []
+    };
+  },
+  mounted() {
+    this.getOrdersWithDetails();
   },
   computed: {
     totalGeneral() {
-      return this.panier.reduce((sum, p) => sum + p.prix * p.quantite, 0);
+      return this.details.reduce((sum, detail) => {
+        const totalHT = parseFloat(detail.total_ht || 0);
+        return sum + totalHT * detail.qty;
+      }, 0);
     }
   },
   methods: {
-    increment(p) {
-      p.quantite++;
+    async getOrdersWithDetails() {
+      try {
+        const tiersName = localStorage.getItem('tiersName');
+        if (!tiersName) {
+          console.log('Aucun client connecté.');
+          return;
+        }
+
+        const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/orders', {
+          headers: {
+            'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+            'Accept': 'application/json'
+          }
+        });
+
+        const orders = response.data;
+        const clientOrders = orders.filter(order => order.ref_client === tiersName);
+
+        this.details = clientOrders.flatMap(order =>
+          order.lines.map(line => ({
+            id: line.id,
+            label: line.product_label || 'Produit inconnu',
+            total_ht: line.total_ht || 0,
+            qty: line.qty || 1,
+            fk_commande: order.id
+          }))
+        );
+
+        console.log('Détails des commandes :', this.details);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des commandes :', error);
+      }
     },
-    decrement(p) {
-      if (p.quantite > 1) p.quantite--;
-    },
-    supprimerProduit(id) {
-      this.panier = this.panier.filter(p => p.id !== id);
+
+    async increment(detail) {
+  const ancienneQuantite = detail.qty;
+  detail.qty++; // mise à jour immédiate du front
+
+  try {
+    await axios.put(`http://localhost:7979/dolibarr/htdocs/api/index.php/orders/${detail.fk_commande}/lines/${detail.id}`, {
+      qty: detail.qty
+    }, {
+      headers: {
+        'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+        'Content-Type': 'application/json',
+        // pas besoin de 'Accept-Encoding'
+      }
+    });
+    console.log(`Quantité mise à jour pour le produit ${detail.label} : ${detail.qty}`);
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la quantité :', error);
+
+    // Si l’erreur est un bug de réseau (donc update OK côté serveur), on ne fait rien
+    if (error.message !== 'Network Error') {
+      detail.qty = ancienneQuantite; // rollback si autre erreur
+    } else {
+      console.warn("Erreur réseau ignorée, la quantité est probablement bien mise à jour côté serveur.");
     }
   }
-}
+},
+
+async decrement(detail) {
+  if (detail.qty > 1) {
+    const ancienneQuantite = detail.qty;
+    detail.qty--; // mise à jour immédiate du front
+
+    try {
+      await axios.put(`http://localhost:7979/dolibarr/htdocs/api/index.php/orders/${detail.fk_commande}/lines/${detail.id}`, {
+        qty: detail.qty
+      }, {
+        headers: {
+          'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+          'Content-Type': 'application/json',
+        }
+      });
+      console.log(`Quantité mise à jour pour le produit ${detail.label} : ${detail.qty}`);
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la quantité :', error);
+
+      if (error.message !== 'Network Error') {
+        detail.qty = ancienneQuantite; // rollback
+      } else {
+        console.warn("Erreur réseau ignorée, la quantité est probablement bien mise à jour côté serveur.");
+      }
+    }
+  }
+},
+
+
+    async supprimerProduit(id) {
+      const detail = this.details.find(d => d.id === id);
+      if (!detail) return;
+
+      try {
+        await axios.delete(`http://localhost:7979/dolibarr/htdocs/api/index.php/orders/${detail.fk_commande}/lines/${id}`, {
+          headers: {
+            'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+            'Content-Type': 'application/json'
+          }
+        });
+        this.details = this.details.filter(d => d.id !== id);
+        console.log(`Produit supprimé : ${detail.label}`);
+      } catch (error) {
+        console.error('Erreur lors de la suppression du produit :', error);
+      }
+    }
+  }
+};
 </script>
+
 <template>
-    <Header />
-  
-    <div v-for="produit in panier" :key="produit.id" class="commandDetail">
-      <img :src="produit.image" alt="Image produit" class="imageProduit" />
-      
-      <div class="nomProduit">{{ produit.nom }}</div>
-      <div class="prixProduit">{{ produit.prix.toLocaleString() }} Ar</div>
-      
-      <div class="quantite">
-        <div class="quantite-control">
-          <button @click="decrement(produit)">-</button>
-          <input type="number" :value="produit.quantite" readonly />
-          <button @click="increment(produit)">+</button>
-        </div>
+  <Header />
+
+  <div v-for="detail in details" :key="detail.id" class="commandDetail">
+    <div class="nomProduit">{{ detail.label }}</div>
+    <div class="prixProduit">{{ parseFloat(detail.total_ht || 0).toLocaleString() }} Ar</div>
+
+    <div class="quantite">
+      <div class="quantite-control">
+        <button @click="decrement(detail)">-</button>
+        <input type="number" :value="detail.qty" readonly />
+        <button @click="increment(detail)">+</button>
       </div>
-  
-      <div class="totalProduit">{{ (produit.prix * produit.quantite).toLocaleString() }} Ar</div>
-  
-      <button class="supprimer" @click="supprimerProduit(produit.id)">Supprimer</button>
     </div>
-  
-    <div class="facture">
-      <h2>Total général : {{ totalGeneral.toLocaleString() }} Ar</h2>
+
+    <div class="totalProduit">
+      {{ (parseFloat(detail.total_ht || 0) * detail.qty).toLocaleString() }} Ar
     </div>
-  </template>
-  
+
+    <button class="supprimer" @click="supprimerProduit(detail.id)">Supprimer</button>
+  </div>
+
+  <div class="facture">
+    <h2>Total général : {{ totalGeneral.toLocaleString() }} Ar</h2>
+  </div>
+</template>
 
 <style scoped>
 .commandDetail {
@@ -80,13 +169,6 @@ export default {
   padding: 15px 30px;
   border-bottom: 1px solid #ccc;
   font-family: "AktivGrotesk-Regular", sans-serif;
-}
-
-.imageProduit {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 10px;
 }
 
 .nomProduit,
@@ -138,5 +220,4 @@ export default {
   font-weight: bold;
   color: #333;
 }
-
 </style>
