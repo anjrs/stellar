@@ -37,27 +37,129 @@ export default {
   },
 
   methods: {
-    async getProduit() {
-      try {
-        const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/products', {
-          headers: {
-            'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-            'Accept': 'application/json'
-          }
-        });
-        this.produits = response.data.map(produit => {
-          const categorieLabel = this.categoriesMap.get(produit.fk_product_type);
-          return {
+  async getProduit() {
+    try {
+      // 1. Récupérer tous les produits
+      const productsResponse = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/products', {
+        headers: {
+          'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+          'Accept': 'application/json'
+        },
+        params: {
+          limit: 100 // Ajustez selon vos besoins
+        }
+      });
+      
+      // Stocker temporairement les produits
+      const productsData = productsResponse.data;
+      this.produits = [];
+      
+      // 2. Pour chaque produit, récupérer ses catégories
+      for (const produit of productsData) {
+        // Appel à l'API pour obtenir les catégories du produit
+        try {
+          const categoriesResponse = await axios.get(
+            `http://localhost:7979/dolibarr/htdocs/api/index.php/products/${produit.id}/categories`, 
+            {
+              headers: {
+                'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+                'Accept': 'application/json'
+              }
+            }
+          );
+          
+          // Ajouter les informations de catégorie au produit
+          const categories = categoriesResponse.data || [];
+          const categorieLabels = categories.map(cat => cat.label).join(', ');
+          
+          this.produits.push({
             ...produit,
-            categorieLabel: categorieLabel  // Ajout de la catégorie
-          };
-        });
-      } catch (error) {
-        console.error('Erreur lors de la récupération des produits:', error);
+            categories: categories,
+            categorieLabel: categorieLabels || 'Non catégorisé'
+          });
+          
+        } catch (error) {
+          console.error(`Erreur lors de la récupération des catégories pour le produit ${produit.id}:`, error);
+          // En cas d'erreur, on ajoute quand même le produit mais sans catégorie
+          this.produits.push({
+            ...produit,
+            categories: [],
+            categorieLabel: 'Non catégorisé'
+          });
+        }
       }
-    },
-
-    async getTiersIdByEmail(email)
+      
+    } catch (error) {
+      console.error('Erreur lors de la récupération des produits:', error);
+    }
+  },
+  
+  // Méthode alternative qui fait moins d'appels API mais nécessite un traitement supplémentaire
+  async getProduitAlternative() {
+    try {
+      // 1. Récupérer tous les produits
+      const productsResponse = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/products', {
+        headers: {
+          'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+          'Accept': 'application/json'
+        }
+      });
+      
+      // 2. Récupérer toutes les catégories de produits
+      const categoriesResponse = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/categories?type=product', {
+        headers: {
+          'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+          'Accept': 'application/json'
+        }
+      });
+      
+      // 3. Récupérer toutes les associations produit-catégorie
+      const categoryProductsMap = new Map();
+      
+      for (const categorie of categoriesResponse.data) {
+        try {
+          const catProductsResponse = await axios.get(
+            `http://localhost:7979/dolibarr/htdocs/api/index.php/categories/${categorie.id}/products`,
+            {
+              headers: {
+                'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+                'Accept': 'application/json'
+              }
+            }
+          );
+          
+          // Pour chaque produit dans cette catégorie
+          for (const produit of catProductsResponse.data) {
+            if (!categoryProductsMap.has(produit.id)) {
+              categoryProductsMap.set(produit.id, []);
+            }
+            categoryProductsMap.get(produit.id).push({
+              id: categorie.id,
+              label: categorie.label
+            });
+          }
+        } catch (error) {
+          console.error(`Erreur lors de la récupération des produits pour la catégorie ${categorie.id}:`, error);
+        }
+      }
+      
+      // 4. Associer les catégories aux produits
+      this.produits = productsResponse.data.map(produit => {
+        const productCategories = categoryProductsMap.get(produit.id) || [];
+        const categorieLabels = productCategories.map(cat => cat.label).join(', ');
+        
+        return {
+          ...produit,
+          categories: productCategories,
+          categorieLabel: categorieLabels || 'Non catégorisé'
+        };
+      });
+      
+    } catch (error) {
+      console.error('Erreur lors de la récupération des données:', error);
+    }
+  },
+  async getTiersIdByEmail(email)
     {
       try {
         const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/thirdparties', {
@@ -224,8 +326,11 @@ async getSocIdByEmail(email) {
     console.error('Erreur lors de la récupération des catégories :', error);
   }
 },
+},
+
+    
   }
-}
+
 </script>
 
 <template>
