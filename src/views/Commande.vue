@@ -1,185 +1,256 @@
-  
-  <script>
-  import axios from "axios";
-  import Header from "../components/Header.vue";
-  
-  export default {
-    data() {
-      return {
-        commandes: [] // Liste des commandes du client
-      };
-    },
-    mounted() {
-      this.getClientOrders(); // Récupérer les commandes dès que la page est chargée
-    },
-    methods: {
-      // Récupérer les commandes du client
-      async getClientOrders() {
-        try {
-          const tiersId = localStorage.getItem("tiersId"); // Récupérer l'ID du client depuis localStorage
-          if (!tiersId) {
-            console.log("Aucun client connecté.");
-            return;
-          }
-  
-          const response = await axios.get("http://localhost:7979/dolibarr/htdocs/api/index.php/orders", {
-            headers: {
-              DOLAPIKEY: "8a8MsnQGo371to4oVLWk552rIhNUFIt8",
-              Accept: "application/json"
-            }
-          });
-  
-          const orders = response.data;
-          console.log("Commandes récupérées depuis l'API :", orders);
-  
-          // Filtrer les commandes associées au client connecté et exclure les brouillons
-          this.commandes = orders.filter(order => order.ref_client === tiersId && order.status !== "0");
-          console.log("Commandes filtrées :", this.commandes);
-        } catch (error) {
-          console.error("Erreur lors de la récupération des commandes :", error);
-        }
-      },
-  
-      // Formater la date
-      formatDate(timestamp) {
-        const date = new Date(timestamp * 1000); // Convertir le timestamp en millisecondes
-        return date.toLocaleDateString("fr-FR");
-      },
-  
-      // Obtenir le label du statut
-      getStatusLabel(status) {
-        switch (status) {
-          case "1":
-            return "Validée";
-          case "2":
-            return "Expédiée";
-          case "3":
-            return "Livrée";
-          default:
-            return "Inconnu";
-        }
-      },
-  
-      // Obtenir la classe CSS pour le statut
-      getStatusClass(status) {
-        switch (status) {
-          case "1":
-            return "status-validee";
-          case "2":
-            return "status-expediee";
-          case "3":
-            return "status-livree";
-          default:
-            return "status-inconnu";
-        }
-      }
-    }
-  };
-  </script>
-  
 <template>
+  <div class="container">
     <Header />
-    <div class="container">
-      <div class="commande">
-        <h1>Mes Commandes</h1>
-        <div v-if="commandes.length === 0" class="empty">
-          <p>Aucune commande trouvée.</p>
-        </div>
-        <div v-else class="commande-list">
-          <div v-for="commande in commandes" :key="commande.id" class="commande-item">
-            <div class="commande-info">
-              <h2>Commande #{{ commande.ref }}</h2>
-              <p>Date : {{ formatDate(commande.date_creation) }}</p>
-              <p>Status : <span :class="getStatusClass(commande.status)">{{ getStatusLabel(commande.status) }}</span></p>
-            </div>
-          </div>
-        </div>
+    <div class="commande">
+      <h1>Mes Commandes</h1>
+      <div v-if="commandes.length === 0" class="empty">
+        <p>Aucune commande trouvée.</p>
+      </div>
+      <div v-else class="commande-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Date</th>
+              <th>Total TTC</th>
+              <th>Statut</th>
+              <!-- <th>Facture</th> -->
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="commande in commandes" :key="commande.id">
+              <td>{{ commande.ref }}</td>
+              <td>{{ formatDate(commande.date_creation) }}</td>
+              <td>{{ formatCurrency(commande.total_ttc) }}</td>
+              <td>
+                <span :class="getStatusClass(commande.status)">
+                  {{ getStatusText(commande) }}
+                </span>
+              </td>
+              <!-- <td> -->
+                <!-- <a
+                  v-if="commande.status === '2' || commande.status === '4'" 
+                  :href="`http://localhost:7979/dolibarr/htdocs/commande/card.php?action=classifybilled&token=92f5606db597b624a7846917224d9759&id=${commande.id}`"
+                  target="_blank"
+                  class="pdf-link"
+                >
+                  Télécharger
+                </a> -->
+                <!-- <span v-else>Non disponible</span> -->
+              <!-- </td> -->
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
-  </template>
+  </div>
+</template>
 
-  
-  <style scoped>
-  /* Conteneur principal */
-  .container {
-    width: 100vw;
-    height: 100vh;
-    background-color: black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+<script>
+import axios from "axios";
+import Header from "../components/Header.vue";
+
+export default {
+  components: {
+    Header
+  },
+  data() {
+    return {
+      commandes: [] // Liste des commandes du client
+    };
+  },
+  mounted() {
+    this.getClientOrders(); // Récupérer les commandes dès que la page est chargée
+  },
+  methods: {
+    // Récupérer les commandes du client
+    async getClientOrders() {
+      try {
+        const tiersId = localStorage.getItem("tiersId"); // Récupérer l'ID du client depuis localStorage
+        if (!tiersId) {
+          console.log("Aucun client connecté.");
+          return;
+        }
+
+        const response = await axios.get("http://localhost:7979/dolibarr/htdocs/api/index.php/orders", {
+          headers: {
+            DOLAPIKEY: "8a8MsnQGo371to4oVLWk552rIhNUFIt8",
+            Accept: "application/json"
+          }
+        });
+
+        const orders = response.data;
+        console.log("Commandes récupérées depuis l'API :", orders);
+
+        // Filtrer les commandes associées au client connecté et exclure les brouillons
+        this.commandes = orders.filter(order => order.ref_client === tiersId && order.status !== "0");
+        console.log("Commandes filtrées :", this.commandes);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des commandes :", error);
+      }
+    },
+
+    // Formater la date
+    formatDate(timestamp) {
+      const date = new Date(timestamp * 1000); // Convertir le timestamp en millisecondes
+      return date.toLocaleDateString("fr-FR");
+    },
+
+    // Formater le montant en devise
+    formatCurrency(amount) {
+      return new Intl.NumberFormat("fr-FR", {
+        style: "currency",
+        currency: "EUR"
+      }).format(amount || 0);
+    },
+
+    getStatusText(commande) {
+  switch (commande.status) {
+    case "0":
+      return "Commande créée";
+
+    case "1":
+      if (commande.billed && (commande.billed === true || commande.billed === "1")) {
+        return "Validé-Facturé";
+      } else if (commande.invoice && commande.invoice === "validé") {
+        return "Validé-Facture créée";
+      } else {
+        return "Validé";
+      }
+
+    case "2":
+      return "Facturée";
+
+    case "3":
+      return "Livrée";
+
+    case "4":
+      return "Traitée";
+
+    case "-1":
+      return "Annulée";
+
+    default:
+      return "Statut inconnu";
   }
-  
-  /* Section des commandes */
-  .commande {
-    width: 100%;
-    max-width: 900px;
-    padding: 40px;
-    border: 3px solid #B1FF36;
-    border-radius: 20px;
-    background-color: transparent;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    color: white;
+},
+
+    // Obtenir la classe CSS pour le statut
+    getStatusClass(status) {
+  switch (status) {
+    case "0":
+      return "status-commande-creee";
+    case "1":
+      return "status-validee";
+    case "2":
+      return "status-facturee";
+    case "3":
+      return "status-livree";
+    case "4":
+      return "status-traitee";
+    case "-1":
+      return "status-annulee";
+    default:
+      return "status-inconnu";
   }
-  
-  .commande h1 {
-    font-size: 28px;
-    margin-bottom: 20px;
-    color: #B1FF36;
+}
   }
-  
-  /* Liste des commandes */
-  .commande-list {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .commande-item {
-    padding: 20px;
-    border: 2px solid #B1FF36;
-    border-radius: 10px;
-    background-color: rgba(255, 255, 255, 0.1);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .commande-info h2 {
-    font-size: 20px;
-    color: #B1FF36;
-  }
-  
-  .commande-info p {
-    margin: 0;
-    font-size: 16px;
-  }
-  
-  /* Statut des commandes */
-  .status-validee {
-    color: #4CAF50; /* Vert */
-  }
-  
-  .status-expediee {
-    color: #FFC107; /* Jaune */
-  }
-  
-  .status-livree {
-    color: #2196F3; /* Bleu */
-  }
-  
-  .status-inconnu {
-    color: #F44336; /* Rouge */
-  }
-  
-  /* Message vide */
-  .empty {
-    text-align: center;
-    font-size: 18px;
-    color: #B1FF36;
-  }
-  </style>
+};
+</script>
+
+<style scoped>
+/* Conteneur principal */
+.container {
+  width: 100vw;
+  height: 100vh;
+  background-color: black;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px;
+}
+
+/* Section des commandes */
+.commande {
+  width: 100%;
+  max-width: 900px;
+  padding: 20px;
+  border: 3px solid #B1FF36;
+  border-radius: 20px;
+  background-color: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  color: white;
+}
+
+.commande h1 {
+  font-size: 28px;
+  margin-bottom: 20px;
+  color: #B1FF36;
+}
+
+/* Tableau des commandes */
+.commande-table table {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+}
+
+.commande-table th,
+.commande-table td {
+  border: 1px solid #B1FF36;
+  padding: 10px;
+  text-align: left;
+}
+
+.commande-table th {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #B1FF36;
+  font-size: 16px;
+}
+
+.commande-table td {
+  font-size: 14px;
+}
+
+.commande-table tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.status-commande-creee {
+  color: gray; /* Commande créée */
+}
+
+.status-validee {
+  color: #4CAF50; /* Vert pour Validée */
+}
+
+.status-facturee {
+  color: #FFC107; /* Jaune pour Facturée */
+}
+
+.status-livree {
+  color: #2196F3; /* Bleu pour Livrée */
+}
+
+.status-traitee {
+  color: #9C27B0; /* Violet pour Traitée */
+}
+
+.status-annulee {
+  color: #F44336; /* Rouge pour Annulée */
+}
+
+.status-inconnu {
+  color: #9E9E9E; /* Gris pour Statut inconnu */
+}
+/* Message vide */
+.empty {
+  text-align: center;
+  font-size: 18px;
+  color: #B1FF36;
+}
+</style>
