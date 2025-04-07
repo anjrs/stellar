@@ -9,11 +9,11 @@ export default {
   },
   data() {
     return {
-      details: []
+      details: [] // Liste des détails des commandes
     };
   },
   mounted() {
-    this.getOrdersWithDetails();
+    this.getOrdersWithDetails(); // Récupérer les commandes dès que la page est chargée
   },
   computed: {
     totalGeneral() {
@@ -24,95 +24,89 @@ export default {
     }
   },
   methods: {
+    // Récupérer les détails des commandes
     async getOrdersWithDetails() {
-      try {
-        const tiersName = localStorage.getItem('tiersName');
-        if (!tiersName) {
-          console.log('Aucun client connecté.');
-          return;
-        }
+  try {
+    const tiersId = localStorage.getItem('tiersId'); // Récupérer l'ID du client depuis localStorage
+    if (!tiersId) {
+      console.log('Aucun client connecté.');
+      return;
+    }
 
-        const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/orders', {
+    const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/orders', {
+      headers: {
+        'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+        'Accept': 'application/json'
+      }
+    });
+
+    const orders = response.data;
+    console.log('Commandes récupérées depuis l\'API :', orders);
+
+    // Filtrer les commandes associées au client connecté via ref_client
+    const clientOrders = orders.filter(order => order.ref_client === tiersId);
+
+    // Extraire les détails des commandes
+    this.details = clientOrders.flatMap(order =>
+      order.lines.map(line => ({
+        id: line.id,
+        label: line.product_label || 'Produit inconnu',
+        total_ht: line.total_ht || 0,
+        qty: line.qty || 1,
+        fk_commande: order.id // ID de la commande pour les mises à jour
+      }))
+    );
+
+    console.log('Détails des commandes :', this.details);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des commandes :', error);
+  }
+},
+    // Incrémenter la quantité
+    async increment(detail) {
+      const ancienneQuantite = detail.qty;
+      detail.qty++; // mise à jour immédiate du front
+
+      try {
+        await axios.put(`http://localhost:7979/dolibarr/htdocs/api/index.php/orders/${detail.fk_commande}/lines/${detail.id}`, {
+          qty: detail.qty
+        }, {
           headers: {
             'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-            'Accept': 'application/json'
+            'Content-Type': 'application/json'
           }
         });
-
-        const orders = response.data;
-        const clientOrders = orders.filter(order => order.ref_client === tiersName);
-
-        this.details = clientOrders.flatMap(order =>
-          order.lines.map(line => ({
-            id: line.id,
-            label: line.product_label || 'Produit inconnu',
-            total_ht: line.total_ht || 0,
-            qty: line.qty || 1,
-            fk_commande: order.id
-          }))
-        );
-
-        console.log('Détails des commandes :', this.details);
+        console.log(`Quantité mise à jour pour le produit ${detail.label} : ${detail.qty}`);
       } catch (error) {
-        console.error('Erreur lors de la récupération des commandes :', error);
+        console.error('Erreur lors de la mise à jour de la quantité :', error);
+        detail.qty = ancienneQuantite; // rollback si autre erreur
       }
     },
 
-    async increment(detail) {
-  const ancienneQuantite = detail.qty;
-  detail.qty++; // mise à jour immédiate du front
+    // Décrémenter la quantité
+    async decrement(detail) {
+      if (detail.qty > 1) {
+        const ancienneQuantite = detail.qty;
+        detail.qty--; // mise à jour immédiate du front
 
-  try {
-    await axios.put(`http://localhost:7979/dolibarr/htdocs/api/index.php/orders/${detail.fk_commande}/lines/${detail.id}`, {
-      qty: detail.qty
-    }, {
-      headers: {
-        'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-        'Content-Type': 'application/json',
-        // pas besoin de 'Accept-Encoding'
-      }
-    });
-    console.log(`Quantité mise à jour pour le produit ${detail.label} : ${detail.qty}`);
-  } catch (error) {
-    console.error('Erreur lors de la mise à jour de la quantité :', error);
-
-    // Si l’erreur est un bug de réseau (donc update OK côté serveur), on ne fait rien
-    if (error.message !== 'Network Error') {
-      detail.qty = ancienneQuantite; // rollback si autre erreur
-    } else {
-      console.warn("Erreur réseau ignorée, la quantité est probablement bien mise à jour côté serveur.");
-    }
-  }
-},
-
-async decrement(detail) {
-  if (detail.qty > 1) {
-    const ancienneQuantite = detail.qty;
-    detail.qty--; // mise à jour immédiate du front
-
-    try {
-      await axios.put(`http://localhost:7979/dolibarr/htdocs/api/index.php/orders/${detail.fk_commande}/lines/${detail.id}`, {
-        qty: detail.qty
-      }, {
-        headers: {
-          'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-          'Content-Type': 'application/json',
+        try {
+          await axios.put(`http://localhost:7979/dolibarr/htdocs/api/index.php/orders/${detail.fk_commande}/lines/${detail.id}`, {
+            qty: detail.qty
+          }, {
+            headers: {
+              'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+              'Content-Type': 'application/json'
+            }
+          });
+          console.log(`Quantité mise à jour pour le produit ${detail.label} : ${detail.qty}`);
+        } catch (error) {
+          console.error('Erreur lors de la mise à jour de la quantité :', error);
+          detail.qty = ancienneQuantite; // rollback si autre erreur
         }
-      });
-      console.log(`Quantité mise à jour pour le produit ${detail.label} : ${detail.qty}`);
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour de la quantité :', error);
-
-      if (error.message !== 'Network Error') {
-        detail.qty = ancienneQuantite; // rollback
-      } else {
-        console.warn("Erreur réseau ignorée, la quantité est probablement bien mise à jour côté serveur.");
       }
-    }
-  }
-},
+    },
 
-
+    // Supprimer un produit
     async supprimerProduit(id) {
       const detail = this.details.find(d => d.id === id);
       if (!detail) return;
@@ -124,7 +118,7 @@ async decrement(detail) {
             'Content-Type': 'application/json'
           }
         });
-        this.details = this.details.filter(d => d.id !== id);
+        this.details = this.details.filter(d => d.id !== id); // Mettre à jour localement
         console.log(`Produit supprimé : ${detail.label}`);
       } catch (error) {
         console.error('Erreur lors de la suppression du produit :', error);
@@ -135,38 +129,93 @@ async decrement(detail) {
 </script>
 
 <template>
-  <Header />
+    <Header />
 
-  <div v-for="detail in details" :key="detail.id" class="commandDetail">
-    <div class="nomProduit">{{ detail.label }}</div>
-    <div class="prixProduit">{{ parseFloat(detail.total_ht || 0).toLocaleString() }} Ar</div>
+  <div class="container">
 
-    <div class="quantite">
-      <div class="quantite-control">
-        <button @click="decrement(detail)">-</button>
-        <input type="number" :value="detail.qty" readonly />
-        <button @click="increment(detail)">+</button>
+    <div class="commandes">
+      <!-- Détails des commandes -->
+      <div class="details">
+        <div v-for="detail in details" :key="detail.id" class="commandDetail">
+          <div class="nomProduit">{{ detail.label }}</div>
+          <div class="prixProduit">{{ parseFloat(detail.total_ht || 0).toLocaleString() }} Ar</div>
+
+          <div class="quantite">
+            <div class="quantite-control">
+              <button @click="decrement(detail)">-</button>
+              <input type="number" :value="detail.qty" readonly />
+              <button @click="increment(detail)">+</button>
+            </div>
+          </div>
+
+          <div class="totalProduit">
+            {{ (parseFloat(detail.total_ht || 0) * detail.qty).toLocaleString() }} Ar
+          </div>
+
+          <button class="supprimer" @click="supprimerProduit(detail.id)">Supprimer</button>
+        </div>
+      </div>
+
+      <!-- Total général -->
+      <div class="facture">
+        <h2>Total général</h2>
+        <p>{{ totalGeneral.toLocaleString() }} Ar</p>
       </div>
     </div>
-
-    <div class="totalProduit">
-      {{ (parseFloat(detail.total_ht || 0) * detail.qty).toLocaleString() }} Ar
-    </div>
-
-    <button class="supprimer" @click="supprimerProduit(detail.id)">Supprimer</button>
-  </div>
-
-  <div class="facture">
-    <h2>Total général : {{ totalGeneral.toLocaleString() }} Ar</h2>
   </div>
 </template>
 
 <style scoped>
+.container {
+  width: 100vw;
+  height: 100vh;
+  background-color: black;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.commandes {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.details {
+  flex: 3;
+  background-color: transparent;
+  border: 3px solid #B1FF36;
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow-y: auto;
+  max-height: 70vh;
+}
+
+.facture {
+  flex: 1;
+  background-color: transparent;
+  border: 3px solid #B1FF36;
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
 .commandDetail {
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 15px 30px;
+  padding: 15px;
   border-bottom: 1px solid #ccc;
   font-family: "AktivGrotesk-Regular", sans-serif;
 }
@@ -177,6 +226,7 @@ async decrement(detail) {
 .totalProduit {
   flex: 1;
   min-width: 100px;
+  color: white;
 }
 
 .quantite-control {
@@ -212,12 +262,14 @@ async decrement(detail) {
   cursor: pointer;
 }
 
-.facture {
-  margin-top: 40px;
-  padding: 20px;
-  border-top: 2px solid #b1ff36;
-  font-size: 20px;
-  font-weight: bold;
-  color: #333;
+.facture h2 {
+  font-size: 24px;
+  color: #b1ff36;
+  margin-bottom: 20px;
+}
+
+.facture p {
+  font-size: 18px;
+  color: white;
 }
 </style>

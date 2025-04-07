@@ -9,20 +9,28 @@ export default {
   },
   props:
   {
-    imageSrc:
-    {
-      type: String,
-      required: true
+    
+    produit: {
+    type: Object,
+    required: true
+  },
+  },
+  methods :
+  {
+    ajouterAuPanier() {
+      // Lever un événement personnalisé pour informer le parent
+      this.$emit('ajouter', this.produit);
     }
-  }
-};
+  },
+  };
+
 </script>
 
 <template>
   <div class="carte">
     <div class="photoProduit">
       <!-- La photo dans un carré arrondi -->
-      <img :src="imageSrc" alt="Produit" class="image" />
+     
       
       <!-- Catégorie du produit -->
       <div class="categorie">
@@ -43,12 +51,12 @@ export default {
       
       <div class="boutons">
         <!-- Les boutons sont alignés -->
-        <Bouton>
+        <button class="custom-button" @click="ajouterAuPanier">
           AJOUTER
-        </Bouton>
-        <Bouton>
+        </button>
+        <button class="custom-button">
           ACHETER
-        </Bouton>
+        </button>
       </div>
     </div>
   </div>
@@ -144,4 +152,10 @@ export default {
   width: 70%;
   max-width: 130px;  /* Limiter la largeur du bouton */
 }
+
+.custom-button:hover
+  {
+    background-color: #B1FF36; /* Effet léger au hover */
+    color: #000; /* Changement de couleur du texte au hover */
+  }
 </style>

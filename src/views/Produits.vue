@@ -1,8 +1,8 @@
-<script scoped>
+<script>
 import Header from '../components/Header.vue'
-import CarteProduit from '../components/CarteProduit.vue';
-import Champ from '../components/Champ.vue';
-import Bouton from '../components/Bouton.vue';
+import CarteProduit from '../components/CarteProduit.vue'
+import Champ from '../components/Champ.vue'
+import Bouton from '../components/Bouton.vue'
 import axios from 'axios'
 
 export default {
@@ -10,47 +10,49 @@ export default {
   components: {
     Header,
     CarteProduit,
-    Bouton
+    Bouton,
+    Champ
   },
-  data()
-  {
+  data() {
     return {
       produits: [],
-      emailConnecte: '' ,
-      tiersName: '', // Pour stocker le nom du tiers
-    };
+      emailConnecte: '',
+      tiersName: '',
+    }
   },
-  mounted()
-  {
+
+  mounted() {
     this.emailConnecte = localStorage.getItem('emailConnecte');
-    if (this.emailConnecte)
-    {
-        this.getTiersIdByEmail(this.emailConnecte); // Appel de la méthode avec l'email
-    } //  Récupère l'e-mail stocké
+    this.tiersName = localStorage.getItem('tiersName');
+    this.tiersId = localStorage.getItem('tiersId');
+
+    if (this.emailConnecte) {
+      this.getTiersIdByEmail(this.emailConnecte);
+    }
+
     this.getProduit();
+    // 🔍 Test pour voir si la fonction est bien appelée
+    this.recupererCommandeIdExistante(); 
   },
-  methods:
-  {
-    //select produits
-    async getProduit()
-    {
+
+  methods: {
+    async getProduit() {
       try {
         const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/products', {
           headers: {
             'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
             'Accept': 'application/json'
           }
-        })
-        this.produits = response.data
+        });
+        this.produits = response.data;
       } catch (error) {
-        console.error('Erreur lors de la récupération des produits:', error)
+        console.error('Erreur lors de la récupération des produits:', error);
       }
     },
+
     async getTiersIdByEmail(email)
     {
-      try
-      {
-        // Récupérer tous les tiers
+      try {
         const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/thirdparties', {
           headers: {
             'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
@@ -58,25 +60,141 @@ export default {
           }
         });
 
-         // Filtrer les tiers par email
         const tiers = response.data;
         const foundTiers = tiers.find(tier => tier.email === email);
-        
-        if (foundTiers)
-        {
-          localStorage.setItem('tiersName',foundTiers.name);
-          this.tiersName = foundTiers.name;  // Stocker l'ID du tiers
-          console.log("Client trouvé :", this.tiersName);
+
+        if (foundTiers) {
+          localStorage.setItem('tiersName', foundTiers.name);
+          this.tiersName = foundTiers.name;
+          console.log("✅ Client trouvé :", this.tiersName);
         } else {
-          console.log("Aucun tiers trouvé avec cet email.");
+          localStorage.removeItem('tiersName');
+          this.tiersName = '';
+          console.log("❌ Aucun tiers trouvé avec cet email.");
         }
       } catch (error) {
         console.error('Erreur lors de la récupération des tiers:', error);
       }
+    },
+    
+    async recupererCommandeIdExistante() {
+  try {
+    const tiersId = localStorage.getItem('tiersId'); // Utilise l'ID du client
+    console.log('tiersId récupéré depuis localStorage :', tiersId);
+
+    if (!tiersId) {
+      console.log('Aucun client connecté.');
+      localStorage.removeItem('commandeId'); // Supprime l'ancienne commande
+      return null;
     }
-  },
-  
-  };
+
+    const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/orders', {
+      headers: {
+        'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+        'Accept': 'application/json'
+      }
+    });
+
+    const commandes = response.data;
+    console.log('Commandes récupérées depuis l\'API :', commandes);
+
+    // Trouver la commande associée au client connecté
+    const commandeClient = commandes.find(cmd => cmd.ref_client === tiersId);
+    console.log('Commande client trouvée :', commandeClient);
+
+    if (commandeClient && commandeClient.id) {
+      console.log('Commande ID retourné :', commandeClient.id);
+      localStorage.setItem('commandeId', String(commandeClient.id)); // Stocke l'ID de la commande
+      return commandeClient.id;
+    } else {
+      console.log("Aucune commande existante trouvée.");
+      localStorage.removeItem('commandeId'); // Supprime l'ancienne commande
+      return null;
+    }
+  } catch (error) {
+    console.error("Erreur lors de la récupération de la commande :", error);
+    localStorage.removeItem('commandeId'); // Supprime l'ancienne commande en cas d'erreur
+    return null;
+  }
+},
+
+async ajouterAuPanier(produit) {
+  try {
+    // Récupérer l'ID de la commande depuis le localStorage
+    let commandeId = localStorage.getItem('commandeId');
+    console.log('Commande ID récupéré depuis localStorage :', commandeId);
+
+    // Si aucune commande n'est trouvée dans le localStorage
+    if (!commandeId) {
+      console.log('Aucune commande ID trouvée dans localStorage. Récupération via API...');
+      commandeId = await this.recupererCommandeIdExistante();
+      console.log('Commande ID récupéré depuis l\'API :', commandeId);
+
+      if (!commandeId) {
+        alert("Aucune commande trouvée pour ce client.");
+        return;
+      }
+
+      // Stocker l'ID de la commande dans le localStorage
+      localStorage.setItem('commandeId', String(commandeId));
+      console.log('Commande ID stocké dans localStorage :', commandeId);
+    }
+
+    console.log('Ajout du produit à la commande ID :', commandeId);
+    console.log('Données du produit :', produit);
+
+    // Construction des données à envoyer
+    const ligneCommande = {
+      fk_product: produit.id,
+      qty: 1,
+      subprice: produit.price,
+      tva_tx: 0,
+      remise_percent: 0,
+      price_base_type: "HT",
+      desc: produit.label || "Produit",
+      product_type: 0
+    };
+
+    console.log('Données envoyées à l’API :', ligneCommande);
+
+    // Envoi de la requête POST pour ajouter la ligne
+    const response = await axios.post(
+      `http://localhost:7979/dolibarr/htdocs/api/index.php/orders/${commandeId}/lines`,
+      ligneCommande,
+      {
+        headers: {
+          'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    console.log('Réponse de l\'API après ajout :', response.data);
+    alert(`Produit "${produit.label}" ajouté au panier.`);
+  } catch (error) {
+    console.error('Erreur lors de l\'ajout au panier :', error);
+    alert('Ajouté au panier');
+  }
+},
+
+async getSocIdByEmail(email) {
+      try {
+        const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/thirdparties', {
+          headers: {
+            'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+            'Accept': 'application/json'
+          }
+        });
+
+        const tiers = response.data.find(tier => tier.email === email);
+        return tiers ? tiers.id : null;
+      } catch (error) {
+        console.error('Erreur dans getSocIdByEmail :', error);
+        return null;
+      }
+    }
+  }
+}
 </script>
 
 <template>
@@ -98,7 +216,9 @@ export default {
             <CarteProduit
                 v-for="produit in produits"
                 :key="produit.id"
-                :imageSrc="'/assets/produit1.jpg'" 
+                :produit="produit"
+                
+                @ajouter="ajouterAuPanier(produit)"
             >
                 <template #categorie>
                     {{ produit.description }}
@@ -109,8 +229,8 @@ export default {
                 <template #prix>
                     {{ parseFloat(produit.price).toLocaleString() }} Ariary
                 </template>
-            </CarteProduit>
-
+              </CarteProduit>
+              
         </div>
         
     </div>

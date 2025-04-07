@@ -4,6 +4,8 @@ import Produits from '../views/Produits.vue'
 import Admin from '../views/Admin.vue'
 import panier from '../views/Panier.vue'  
 import Inscription from '../views/Inscription.vue'
+import Dashboard from '../views/Dashboard.vue'
+import Commande from '../views/Commande.vue'
 
 
 const routes = [
@@ -12,6 +14,9 @@ const routes = [
   { path: '/admin', name: 'Admin', component: Admin },
   { path: '/panier', name: 'Panier', component: panier },
   { path: '/inscription', name: 'Inscriptrion', component: Inscription },
+  { path: '/dashboard', name: 'Dashboard', component: Dashboard},
+  { path:  '/commande' , name: 'Commande' , component: Commande} 
+
 ]
 
 const router = createRouter({
