@@ -605,7 +605,7 @@ export default {
 
 <style scoped>
 .dashboard-container {
-  padding: 30px;
+  padding: 150px;
   color: white;
   background-color: #121212;
   font-family: 'Inter', 'Roboto', sans-serif;

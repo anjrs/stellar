@@ -18,6 +18,7 @@ export default {
       produits: [],
       emailConnecte: '',
       tiersName: '',
+      categoriesMap: new Map(), // Pour stocker les catégories
     }
   },
 
@@ -44,7 +45,13 @@ export default {
             'Accept': 'application/json'
           }
         });
-        this.produits = response.data;
+        this.produits = response.data.map(produit => {
+          const categorieLabel = this.categoriesMap.get(produit.fk_product_type);
+          return {
+            ...produit,
+            categorieLabel: categorieLabel  // Ajout de la catégorie
+          };
+        });
       } catch (error) {
         console.error('Erreur lors de la récupération des produits:', error);
       }
@@ -148,7 +155,7 @@ async ajouterAuPanier(produit) {
       fk_product: produit.id,
       qty: 1,
       subprice: produit.price,
-      tva_tx: 0,
+      tva_tx: produit.tva_tx || 0,
       remise_percent: 0,
       price_base_type: "HT",
       desc: produit.label || "Produit",
@@ -192,7 +199,31 @@ async getSocIdByEmail(email) {
         console.error('Erreur dans getSocIdByEmail :', error);
         return null;
       }
-    }
+    } ,
+
+    async getCategories() {
+  try {
+    const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/categories?type=product', {
+      headers: {
+        'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+        'Accept': 'application/json'
+      }
+    });
+
+    const categories = response.data;
+
+    // Créer un Map pour associer les IDs de catégories à leurs labels
+    const categoriesMap = new Map();
+    categories.forEach(category => {
+      categoriesMap.set(category.id, category.label);
+    });
+
+    this.categoriesMap = categoriesMap; // Stocker le Map dans le composant
+    console.log('Catégories récupérées :', this.categoriesMap);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des catégories :', error);
+  }
+},
   }
 }
 </script>
@@ -206,7 +237,7 @@ async getSocIdByEmail(email) {
         </div>
         <div class="rechercheEtBouton">
             <div class="searchBar">
-                <Champ placeholder="Rechercher un produit" type="text" class="champs"/>
+                <Champ placeholder="Rechercher un produit" type="text"/> 
             </div>
             <Bouton class="bouton">
                 RECHERCHER
@@ -221,13 +252,13 @@ async getSocIdByEmail(email) {
                 @ajouter="ajouterAuPanier(produit)"
             >
                 <template #categorie>
-                    {{ produit.description }}
+                    {{ produit.categorieLabel }}
                 </template>
                 <template #nom>
                     {{ produit.label }}
                 </template>
                 <template #prix>
-                    {{ parseFloat(produit.price).toLocaleString() }} Ariary
+                    {{ parseFloat(produit.price).toLocaleString() }} Ariary HT
                 </template>
               </CarteProduit>
               
@@ -280,11 +311,11 @@ async getSocIdByEmail(email) {
     width: 100%;
     display: flex;
     flex-direction: row; /* Aligne les éléments horizontalement */
-    /* Aligne les éléments à gauche */
-    align-items: center; /* Aligne verticalement les éléments */
-    gap: 20px; /* Espace entre la barre de recherche et le bouton */
-    margin-left: 10%;
-    margin-bottom: 40px;
+    align-items: center; /* Centre verticalement les éléments */
+    justify-content: left; /* Centre horizontalement les éléments */
+    gap: 0px; /* Espace entre la barre de recherche et le bouton */
+    margin-bottom: 60px; /* Espace en bas */
+    padding-left: 50px; /* Espace à gauche et à droite */
 }
 
 .searchBar {
@@ -292,18 +323,16 @@ async getSocIdByEmail(email) {
     font-size: 16px;
     color: #B1FF36;
     background-color: transparent;
-    border: 3px solid #B1FF36;
+    /* border: 2px solid #B1FF36; Ajout d'une bordure verte */
     border-radius: 30px;
-    padding: 10px 20px;
-    cursor: text;
+    padding: 10px 20px; /* Espacement interne */
     display: flex;
-    align-items: center;
-    justify-content: flex-start;
+    align-items: center; /* Centre verticalement le contenu */
+    justify-content: flex-start; /* Aligne le texte à gauche */
     transition: all 0.3s ease;
-    width: 90%;
-    height: 30px; /* Hauteur ajustable */
-    max-width: 500px; /* Largeur ajustable */
-    margin-left: 0; /* Ajuste la position à gauche */
+    width: 100%; /* Prend toute la largeur disponible */
+    max-width: 300px; /* Limite la largeur maximale */
+    height: 40px; /* Hauteur ajustée */
 }
 
 .carteContainer {

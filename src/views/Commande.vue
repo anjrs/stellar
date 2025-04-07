@@ -1,6 +1,7 @@
 <template>
-  <div class="container">
     <Header />
+
+  <div class="container">
     <div class="commande">
       <h1>Mes Commandes</h1>
       <div v-if="commandes.length === 0" class="empty">
@@ -13,6 +14,7 @@
               <th>Référence</th>
               <th>Date</th>
               <th>Total TTC</th>
+              <th>Total HT</th>
               <th>Statut</th>
               <!-- <th>Facture</th> -->
             </tr>
@@ -22,11 +24,14 @@
               <td>{{ commande.ref }}</td>
               <td>{{ formatDate(commande.date_creation) }}</td>
               <td>{{ formatCurrency(commande.total_ttc) }}</td>
+              <td>{{ formatCurrency(commande.total_ht) }}</td>
+
               <td>
                 <span :class="getStatusClass(commande.status)">
                   {{ getStatusText(commande) }}
                 </span>
               </td>
+
               <!-- <td> -->
                 <!-- <a
                   v-if="commande.status === '2' || commande.status === '4'" 
@@ -160,6 +165,7 @@ export default {
 
 <style scoped>
 /* Conteneur principal */
+/* Conteneur principal */
 .container {
   width: 100vw;
   height: 100vh;
@@ -169,27 +175,32 @@ export default {
   align-items: center;
   justify-content: flex-start;
   padding: 20px;
+  font-family: "AktivGrotesk-Regular", sans-serif; /* Police utilisée précédemment */
 }
 
 /* Section des commandes */
 .commande {
   width: 100%;
-  max-width: 900px;
+  max-width: 1200px;
   padding: 20px;
-  border: 3px solid #B1FF36;
-  border-radius: 20px;
-  background-color: transparent;
+  /* border: 2px solid #B1FF36; */
+  border-radius: 15px;
+  background-color: rgba(255, 255, 255, 0.05); /* Fond légèrement transparent */
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 20px;
   color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Ajout d'une ombre */
 }
 
+
 .commande h1 {
-  font-size: 28px;
+  font-size: 32px;
   margin-bottom: 20px;
   color: #B1FF36;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
 /* Tableau des commandes */
@@ -197,12 +208,13 @@ export default {
   width: 100%;
   border-collapse: collapse;
   color: white;
+  font-size: 14px;
 }
 
 .commande-table th,
 .commande-table td {
   border: 1px solid #B1FF36;
-  padding: 10px;
+  padding: 12px;
   text-align: left;
 }
 
@@ -210,16 +222,23 @@ export default {
   background-color: rgba(255, 255, 255, 0.1);
   color: #B1FF36;
   font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .commande-table td {
-  font-size: 14px;
+  background-color: rgba(255, 255, 255, 0.02); /* Fond léger pour les cellules */
 }
 
-.commande-table tr:nth-child(even) {
-  background-color: rgba(255, 255, 255, 0.05);
+.commande-table tr:nth-child(even) td {
+  background-color: rgba(255, 255, 255, 0.05); /* Fond différent pour les lignes paires */
 }
 
+.commande-table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.1); /* Fond au survol */
+}
+
+/* Statuts des commandes */
 .status-commande-creee {
   color: gray; /* Commande créée */
 }
@@ -247,10 +266,71 @@ export default {
 .status-inconnu {
   color: #9E9E9E; /* Gris pour Statut inconnu */
 }
+
 /* Message vide */
 .empty {
   text-align: center;
   font-size: 18px;
   color: #B1FF36;
+  font-style: italic;
+  margin-top: 20px;
+}
+
+/* Boutons ou liens */
+.pdf-link {
+  color: #FFA500;
+  text-decoration: underline;
+  font-size: 14px;
+}
+
+.pdf-link:hover {
+  color: #FF5722;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .commande {
+    padding: 15px;
+  }
+
+  .commande h1 {
+    font-size: 24px;
+  }
+
+  /* Tableau des commandes */
+.commande-table table {
+  width: 500%;
+  max-width: 1200px; /* Augmente la largeur maximale de la table */
+  border-collapse: collapse;
+  color: white;
+  font-size: 16px; /* Augmente la taille de la police */
+}
+
+.commande-table th,
+.commande-table td {
+  border: 1px solid #B1FF36;
+  padding: 16px; /* Augmente l'espacement interne */
+  text-align: left;
+}
+
+.commande-table th {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #B1FF36;
+  font-size: 18px; /* Augmente la taille de la police des en-têtes */
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.commande-table td {
+  background-color: rgba(255, 255, 255, 0.02); /* Fond léger pour les cellules */
+}
+
+.commande-table tr:nth-child(even) td {
+  background-color: rgba(255, 255, 255, 0.05); /* Fond différent pour les lignes paires */
+}
+
+.commande-table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.1); /* Fond au survol */
+}
 }
 </style>

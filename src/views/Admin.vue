@@ -1,5 +1,7 @@
 <script setup>
 import Champ from '../components/Champ.vue'
+import Header from '../components/Header.vue'
+
 import Bouton from '../components/Bouton.vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -44,6 +46,8 @@ const seConnecter = async () =>
 </script>
 
 <template>
+    <Header />
+  
   <div class="container">
     <div class="formulaire">
       <div class="logo">
