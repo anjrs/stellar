@@ -1,130 +1,3 @@
-<template>
-  <div class="dashboard-container">
-    <h1>Tableau de Bord</h1>
-
-    <!-- Total de vente -->
-    <div class="infoGeneral">
-      <div class="card total-vente">
-        <h2>Total des Ventes</h2>
-        <p>{{ formatCurrency(totalVente) }}</p>
-      </div>
-
-      <div class="card commandes-en-attente">
-        <h2>Commandes en Attente</h2>
-        <p>{{ commandesEnAttente.length }}</p>
-      </div>
-
-      <div class="card taux-conversion">
-        <h2>Taux de Conversion</h2>
-        <p>{{ ((commandesPayees.length / (commandesPayees.length + commandesEnAttente.length)) * 100).toFixed(2) }}%</p>
-      </div>
-    </div>
-    
-    <!-- Vente par catégorie -->
-    <div class="categorie">
-      <!-- Circulaire -->
-      <div class="chart-container">
-        <h2>Vente par Catégorie</h2>
-        <canvas id="venteCategorieChart"></canvas>
-      </div>
-      <!-- Liste des catégories avec les barres -->
-      <div class="categories-list">
-        <h2>Liste des Catégories</h2>
-        <ul>
-          <li v-for="categorie in venteParCategorie" :key="categorie.label">
-            <span>{{ categorie.label }}</span>
-            <span>{{ formatCurrency(categorie.value) }}</span>
-          </li>
-        </ul>
-      </div>
-    </div>
-    
-    <!-- Évolution des ventes -->
-    <div class="chart-container">
-      <h2>Évolution des Ventes</h2>
-      <canvas id="evolutionVenteChart"></canvas>
-    </div>
-
-    <!-- Statut des commandes -->
-    <div class="chart-container">
-      <h2>Statut des Commandes</h2>
-      <canvas id="statusCommandeChart"></canvas>
-    </div>
-
-    <!-- Top des produits vendus -->
-    <div class="chart-container">
-      <h2>Top des Produits Vendus</h2>
-      <canvas id="topProduitsChart"></canvas>
-    </div>
-
-    <!-- Liste des commandes payées -->
-    <div class="table-container">
-      <h2>Commandes Payées</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Client</th>
-            <th>Produit</th>
-            <th>Référence</th>
-            <th>Catégorie</th>
-            <th>Quantité</th>
-            <th>Total</th>
-            <th>Statut</th>
-            <th>N° Facture</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="commande in commandesPayees" :key="commande.id">
-            <td>{{ formatDate(commande.date) }}</td>
-            <td>{{ commande.client }}</td>
-            <td>{{ commande.produit }}</td>
-            <td>{{ commande.reference }}</td>
-            <td>{{ commande.categorie }}</td>
-            <td>{{ commande.quantite }}</td>
-            <td>{{ formatCurrency(commande.total) }}</td>
-            <td>{{ commande.status }}</td>
-            <td>{{ commande.facture }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Liste des commandes en attente -->
-    <div class="table-container">
-      <h2>Commandes en Attente</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Client</th>
-            <th>Produit</th>
-            <th>Référence</th>
-            <th>Catégorie</th>
-            <th>Quantité</th>
-            <th>Total</th>
-            <th>Statut</th>
-            <th>N° Facture</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="commande in commandesEnAttente" :key="commande.id">
-            <td>{{ formatDate(commande.date) }}</td>
-            <td>{{ commande.client }}</td>
-            <td>{{ commande.produit }}</td>
-            <td>{{ commande.reference }}</td>
-            <td>{{ commande.categorie }}</td>
-            <td>{{ commande.quantite }}</td>
-            <td>{{ formatCurrency(commande.total) }}</td>
-            <td>{{ commande.status }}</td>
-            <td>{{ commande.facture }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</template>
-
 <script>
 import Chart from "chart.js/auto";
 import axios from "axios";
@@ -140,103 +13,118 @@ export default {
       statusCommande: [],
       topProduits: [],
       isLoading: true,
-      error: null
+      error: null,
+      categoriesMap: {},
+      stockMovements: [],
+      // Configuration API
+      API_KEY: "8a8MsnQGo371to4oVLWk552rIhNUFIt8",
+      API_URL: "http://localhost:7979/dolibarr/htdocs/api/index.php",
+      // Map pour stocker les références
+      clientsMap: null,
+      produitsMap: {}
     };
   },
   mounted() {
     this.fetchDashboardData();
   },
   methods: {
+    
+  async fetchStockMovements() {
+    try {
+      const headers = {
+        DOLAPIKEY: this.API_KEY,
+        Accept: "application/json"
+      };
+
+      // Appel à l'API pour récupérer les mouvements de stock
+      const response = await axios.get(`${this.API_URL}/stockmovements`, { headers });
+      this.stockMovements = response.data; // Stocker les mouvements de stock
+      console.log("Mouvements de stock récupérés :", this.stockMovements);
+    } catch (error) {
+      console.error("Erreur lors de la récupération des mouvements de stock :", error);
+    }
+  },
+
     async fetchDashboardData() {
       try {
         this.isLoading = true;
         
-        // Configuration de l'API Dolibarr
-        const API_KEY = "8a8MsnQGo371to4oVLWk552rIhNUFIt8";
-        const API_URL = "http://localhost:7979/dolibarr/htdocs/api/index.php";
         const headers = {
-          DOLAPIKEY: API_KEY,
+          DOLAPIKEY: this.API_KEY,
           Accept: "application/json"
         };
         
         // Récupération des données en parallèle pour améliorer les performances
         const [commandesResponse, produitsResponse, categoriesResponse] = await Promise.all([
-          axios.get(`${API_URL}/orders?limit=100&sortfield=date_creation&sortorder=DESC`, { headers }),
-          axios.get(`${API_URL}/products?limit=100`, { headers }),
-          axios.get(`${API_URL}/categories?type=product&limit=100`, { headers }),
-          
+          axios.get(`${this.API_URL}/orders?limit=100&sortfield=date_creation&sortorder=DESC`, { headers }),
+          axios.get(`${this.API_URL}/products?limit=100`, { headers }),
+          axios.get(`${this.API_URL}/categories?type=product&limit=100`, { headers }),
         ]);
 
-        // Récupération des informations détaillées des commandes pour avoir les lignes de commande
+        // Traitement des données
         const commandes = commandesResponse.data;
         const produits = produitsResponse.data;
         const categories = categoriesResponse.data;
         
-        // Map pour stocker les noms de catégories par ID
-        const categoriesMap = {};
-        if (Array.isArray(categories)) {
-          categories.forEach(cat => {
-            categoriesMap[cat.id] = cat.label || cat.ref || `Catégorie ${cat.label}`;
-          });
-        }
+        console.log("Catégories récupérées:", categories);
         
-        // Récupérer les détails des commandes (pour avoir les lignes)
-        const commandesDetaillees = [];
-        for (const commande of commandes.slice(0, 30)) { // Limiter à 30 pour éviter trop de requêtes
-          try {
-            const detailResponse = await axios.get(`${API_URL}/orders/${commande.id}`, { headers });
-            if (detailResponse.data) {
-              commandesDetaillees.push({
+        
+        // Créer des mappings pour un accès plus rapide aux données
+        // 1. Map des catégories par ID
+        const categoriesMap = this.createCategoriesMap(categories);
+        console.log("Map des catégories:", categoriesMap);
+        
+        // 2. Map produit-catégorie en utilisant la méthode plus efficace
+        const categoryProductMap = await this.buildCategoryProductMap(categories, headers);
+        console.log("Map produit-catégorie:", [...categoryProductMap.entries()].slice(0, 5));
+        
+        // 3. Map des produits avec leurs catégories
+        this.produitsMap = this.createProduitsMap(produits, categoryProductMap, categoriesMap);
+        console.log("Map des produits:", Object.values(this.produitsMap).slice(0, 5));
+        
+        // Récupérer les détails des commandes (pour avoir les lignes) en utilisant des promesses parallèles
+        const commandesPromises = commandes.slice(0, 30).map(commande => 
+          axios.get(`${this.API_URL}/orders/${commande.id}`, { headers })
+            .then(response => ({
+              ...commande,
+              lines: response.data.lines || []
+            }))
+            .catch(error => {
+              console.warn(`Impossible de récupérer les détails de la commande ${commande.id}:`, error);
+              return {
                 ...commande,
-                lines: detailResponse.data.lines || []
-              });
-            }
-          } catch (e) {
-            console.warn(`Impossible de récupérer les détails de la commande ${commande.id}:`, e);
-          }
-        }
+                lines: []
+              };
+            })
+        );
+        
+        const commandesDetaillees = await Promise.all(commandesPromises);
+        console.log("Commandes détaillées:", commandesDetaillees.slice(0, 2));
 
-        // Map des produits pour accès rapide
-        const produitsMap = {};
-        if (Array.isArray(produits)) {
-          produits.forEach(produit => {
-            produitsMap[produit.id] = {
-              label: produit.label || produit.ref,
-              categorieId: produit.array_options?.options_categorie || produit.fk_product_type || 0
-            };
-          });
-        }
-
-        // Traiter les commandes
-        // Calculer le total des ventes
-        this.totalVente = commandesDetaillees.reduce((sum, commande) => {
-          return sum + parseFloat(commande.total_ttc || 0);
-        }, 0);
-
-        // Filtrer les commandes par statut
-        // Dans Dolibarr: 0=brouillon, 1=validée, 2=en cours, 3=livrée, -1=annulée
-        this.commandesPayees = commandesDetaillees.filter(commande => 
-          commande.billed === "1" || commande.status === "3" || commande.status === "1");
-        this.commandesEnAttente = commandesDetaillees.filter(commande => 
-          commande.billed !== "1" && commande.status !== "3" && commande.status !== "-1");
-
-        // Transformer les commandes pour l'affichage
-        this.commandesPayees = this.transformCommandesForDisplay(this.commandesPayees, produitsMap, categoriesMap);
-        this.commandesEnAttente = this.transformCommandesForDisplay(this.commandesEnAttente, produitsMap, categoriesMap);
-
-        // Calculer les ventes par catégorie
-        this.venteParCategorie = this.calculateVenteParCategorie(commandesDetaillees, produitsMap, categoriesMap);
-
-        // Calculer l'évolution des ventes
+        // Traitement des données pour affichage
+        // 1. Calculer le total des ventes
+        this.totalVente = this.calculateTotalVente(commandesDetaillees);
+        
+        // 2. Filtrer les commandes par statut
+        this.filterCommandes(commandesDetaillees, this.produitsMap, categoriesMap);
+        
+        // 3. Calculer les ventes par catégorie
+        this.venteParCategorie = this.calculateVenteParCategorie(commandesDetaillees, this.produitsMap, categoriesMap);
+        console.log("Ventes par catégorie:", this.venteParCategorie);
+        
+        // 4. Calculer l'évolution des ventes
         this.evolutionVente = this.calculateEvolutionVente(commandesDetaillees);
-
-        // Calculer le statut des commandes
+        
+        // 5. Calculer le statut des commandes
         this.statusCommande = this.calculateStatusCommande(commandesDetaillees);
+        
+        // 6. Top des produits vendus
+        this.topProduits = this.calculateTopProduits(commandesDetaillees, this.produitsMap);
 
-        // Top des produits vendus
-        this.topProduits = this.calculateTopProduits(commandesDetaillees, produitsMap);
+        // Vérifier les associations de catégories
+        this.debugCategoriesMapping();
 
-        // Initialiser les graphiques
+        // Initialiser les graphiques après que les données sont prêtes
         this.$nextTick(() => {
           this.initCharts();
         });
@@ -249,43 +137,215 @@ export default {
       }
     },
     
+    debugCategoriesMapping() {
+      console.log("Vérification des catégories:");
+      console.log("Nombre total de produits avec catégorie:", Object.values(this.produitsMap).filter(p => p.categorieLabel !== "Non catégorisé").length);
+      console.log("Nombre total de produits sans catégorie:", Object.values(this.produitsMap).filter(p => p.categorieLabel === "Non catégorisé").length);
+      
+      // Vérifier quelques produits au hasard
+      const sampleProducts = Object.values(this.produitsMap).slice(0, 5);
+      console.log("Échantillon de produits avec leurs catégories:", sampleProducts);
+      
+      // Vérifier les catégories des commandes
+      if (this.commandesPayees.length > 0) {
+        console.log("Exemple de catégories dans les commandes payées:", 
+          this.commandesPayees.slice(0, 3).map(c => ({ id: c.id, categorie: c.categorie })));
+      }
+    },
+    
+    createCategoriesMap(categories) {
+      const categoriesMap = {};
+      if (Array.isArray(categories)) {
+        categories.forEach(cat => {
+          categoriesMap[cat.id] = cat.label || cat.ref || `Catégorie ${cat.id}`;
+        });
+      }
+      return categoriesMap;
+    },
+
+    async getNomClientById(ref_client) {
+      try {
+        // Vérifiez si la Map des clients existe déjà
+        if (!this.clientsMap) {
+          this.clientsMap = new Map();
+
+          // Récupérez tous les clients via l'API
+          const response = await axios.get(`${this.API_URL}/thirdparties?limit=100`, {
+            headers: {
+              DOLAPIKEY: this.API_KEY,
+              Accept: "application/json"
+            }
+          });
+
+          // Stockez les noms des clients dans la Map
+          response.data.forEach(client => {
+            this.clientsMap.set(client.id, client.name || `Client ${client.id}`);
+          });
+        }
+
+        // Retournez le nom du client correspondant à l'ID
+        return this.clientsMap.get(ref_client) || `Client ${ref_client}`;
+      } catch (error) {
+        console.error(`Erreur lors de la récupération du nom du client ${ref_client}:`, error);
+        return `Client ${ref_client}`;
+      }
+    },
+    
+    async buildCategoryProductMap(categories, headers) {
+      const categoryProductMap = new Map(); // Map de ProductID -> Array de catégories
+      
+      if (!Array.isArray(categories)) return categoryProductMap;
+      
+      // Créer un tableau de promesses pour récupérer les produits par catégorie
+      const categoryPromises = categories.map(category => 
+        axios.get(`${this.API_URL}/categories/${category.id}/products`, { headers })
+          .then(response => {
+            // Vérifier que response.data est un tableau
+            const products = Array.isArray(response.data) ? response.data : [];
+            
+            // Pour chaque produit dans cette catégorie
+            products.forEach(product => {
+              const productId = product.id || product.rowid; // Certaines APIs renvoient rowid au lieu de id
+              
+              if (!categoryProductMap.has(productId)) {
+                categoryProductMap.set(productId, []);
+              }
+              
+              // Ajouter cette catégorie à la liste des catégories du produit
+              categoryProductMap.get(productId).push({
+                id: category.id,
+                label: category.label || category.ref || `Catégorie ${category.id}`,
+                ref: category.ref
+              });
+              
+              // Log pour débogage
+              console.log(`Produit ${productId} associé à catégorie ${category.label || category.id}`);
+            });
+          })
+          .catch(error => {
+            console.error(`Erreur pour la catégorie ${category.id}:`, error);
+          })
+      );
+      
+      // Attendre que toutes les requêtes soient terminées
+      await Promise.all(categoryPromises);
+      
+      // Log pour débogage
+      console.log("Mapping produit-catégorie finalisé:", [...categoryProductMap.entries()].slice(0, 3));
+      
+      return categoryProductMap;
+    },
+    
+    // Méthode alternative pour récupérer les catégories d'un produit spécifique
+    async getCategoriesForProduct(productId, headers) {
+      try {
+        const response = await axios.get(`${this.API_URL}/products/${productId}/categories`, { headers });
+        return Array.isArray(response.data) ? response.data : [];
+      } catch (error) {
+        console.error(`Erreur lors de la récupération des catégories pour le produit ${productId}:`, error);
+        return [];
+      }
+    },
+    
+    createProduitsMap(produits, categoryProductMap, categoriesMap) {
+      const produitsMap = {};
+      
+      if (Array.isArray(produits)) {
+        produits.forEach(produit => {
+          // Récupérer les catégories pour ce produit
+          const productCategories = categoryProductMap.get(produit.id) || [];
+          
+          // Trouver la catégorie principale (première catégorie)
+          let categorieId = 0;
+          let categorieLabel = "Non catégorisé";
+          
+          if (productCategories.length > 0) {
+            categorieId = productCategories[0].id;
+            categorieLabel = productCategories[0].label || categoriesMap[categorieId] || "Non catégorisé";
+          }
+          
+          produitsMap[produit.id] = {
+            id: produit.id,
+            label: produit.label || produit.ref || `Produit ${produit.id}`,
+            ref: produit.ref || "",
+            categorieId: categorieId,
+            categorieLabel: categorieLabel,
+            categories: productCategories
+          };
+        });
+      }
+      
+      return produitsMap;
+    },
+    
+    calculateTotalVente(commandes) {
+      return commandes.reduce((sum, commande) => {
+        return sum + parseFloat(commande.total_ttc || 0);
+      }, 0);
+    },
+    
+    filterCommandes(commandes, produitsMap, categoriesMap) {
+      // Filtrer les commandes par statut
+      this.commandesPayees = commandes.filter(commande => 
+        commande.billed === "1" || commande.status === "3" || commande.status === "1");
+      this.commandesEnAttente = commandes.filter(commande => 
+        commande.billed !== "1" && commande.status !== "3" && commande.status !== "-1");
+        
+      // Transformer les commandes pour l'affichage
+      this.commandesPayees = this.transformCommandesForDisplay(this.commandesPayees, produitsMap, categoriesMap);
+      this.commandesEnAttente = this.transformCommandesForDisplay(this.commandesEnAttente, produitsMap, categoriesMap);
+    },
+    
     transformCommandesForDisplay(commandes, produitsMap, categoriesMap) {
       return commandes.map(commande => {
         // Trouver le premier produit de la commande pour l'affichage
         const firstLine = commande.lines && commande.lines.length > 0 ? commande.lines[0] : null;
         const produitId = firstLine ? firstLine.fk_product : null;
+        
+        // Récupérer les informations du produit
         const produit = produitId && produitsMap[produitId] ? produitsMap[produitId] : null;
         
-        // Statut de la commande
-        let status = "Inconnu";
-        switch (commande.status) {
-          case "-1": status = "Annulée"; break;
-          case "0": status = "Brouillon"; break;
-          case "1": status = "Validée"; break;
-          case "2": status = "En cours"; break;
-          case "3": status = "Livrée"; break;
+        // Log pour débogage
+        if (produit) {
+          console.log(`Commande ${commande.id}, produit ${produitId}, catégorie: ${produit.categorieLabel}`);
         }
         
-        // Ajout d'info "Payée" si c'est le cas
-        if (commande.billed === "1") {
-          status += " (Payée)";
-        }
+        // Statut de la commande
+        let status = this.getCommandeStatus(commande);
         
         return {
           id: commande.id,
           date: commande.date_creation || commande.date_commande,
+          socid: commande.socid, // Ajouté pour référence
           client: commande.socnom || `Client ${commande.socid}`,
           produit: produit ? produit.label : "Produit inconnu",
           reference: commande.ref || "-",
-          categorie: produit && produit.categorieId && categoriesMap[produit.categorieId] 
-            ? categoriesMap[produit.categorieId] 
-            : "Non catégorisé",
+          categorie: produit && produit.categorieLabel ? produit.categorieLabel : "Non catégorisé",
           quantite: firstLine ? firstLine.qty : 0,
           total: commande.total_ttc,
           status: status,
           facture: commande.billed === "1" ? commande.ref_client || "Facturée" : "-"
         };
       });
+    },
+    
+    getCommandeStatus(commande) {
+      let status = "Inconnu";
+      
+      switch (commande.status) {
+        case "-1": status = "Annulée"; break;
+        case "0": status = "Brouillon"; break;
+        case "1": status = "Validée"; break;
+        case "2": status = "En cours"; break;
+        case "3": status = "Livrée"; break;
+      }
+      
+      // Ajout d'info "Payée" si c'est le cas
+      if (commande.billed === "1") {
+        status += " (Payée)";
+      }
+      
+      return status;
     },
     
     calculateVenteParCategorie(commandes, produitsMap, categoriesMap) {
@@ -300,15 +360,14 @@ export default {
           const produit = produitsMap[line.fk_product];
           if (!produit) return;
           
-          const categorieId = produit.categorieId;
-          const categorieName = categoriesMap[categorieId] || "Autres";
+          const categorieName = produit.categorieLabel || "Autres";
           
           if (!categories[categorieName]) {
             categories[categorieName] = 0;
           }
           
           // Multiplier le prix unitaire par la quantité
-          const montant = parseFloat(line.total_ttc || line.price * line.qty || 0);
+          const montant = parseFloat(line.total_ttc || (line.price * line.qty) || 0);
           categories[categorieName] += montant;
         });
       });
@@ -324,6 +383,9 @@ export default {
       const dateFormat = { year: 'numeric', month: 'short' };
 
       commandes.forEach(commande => {
+        // Vérifier que la date est valide
+        if (!commande.date_creation) return;
+        
         const date = new Date(commande.date_creation * 1000);
         const moisAnnee = date.toLocaleDateString('fr-FR', dateFormat);
         
@@ -334,16 +396,14 @@ export default {
         ventesParMois[moisAnnee] += parseFloat(commande.total_ttc || 0);
       });
 
-      // Trier par date (transformer en objet avec date pour pouvoir trier)
-      const result = Object.entries(ventesParMois)
+      // Trier par date
+      return Object.entries(ventesParMois)
         .map(([date, value]) => ({ date, value }))
         .sort((a, b) => {
           const dateA = new Date(a.date.replace(/^\S+\s+/, ''));
           const dateB = new Date(b.date.replace(/^\S+\s+/, ''));
           return dateA - dateB;
         });
-        
-      return result;
     },
     
     calculateStatusCommande(commandes) {
@@ -397,6 +457,13 @@ export default {
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 5);
+    },
+    
+    calculateConversionRate() {
+      const total = this.commandesPayees.length + this.commandesEnAttente.length;
+      if (total === 0) return "0.00";
+      
+      return ((this.commandesPayees.length / total) * 100).toFixed(2);
     },
     
     initCharts() {
@@ -602,6 +669,145 @@ export default {
   }
 };
 </script>
+
+<template>
+  <div class="dashboard-container">
+    <h1>Tableau de Bord</h1>
+
+    <!-- Indicateurs généraux -->
+    <div class="infoGeneral">
+      <div class="card total-vente">
+        <h2>Total des Ventes</h2>
+        <p>{{ formatCurrency(totalVente) }}</p>
+      </div>
+
+      <div class="card commandes-en-attente">
+        <h2>Commandes en Attente</h2>
+        <p>{{ commandesEnAttente.length }}</p>
+      </div>
+
+      <div class="card taux-conversion">
+        <h2>Taux de Conversion</h2>
+        <p>{{ calculateConversionRate() }}%</p>
+      </div>
+    </div>
+    
+    <!-- Vente par catégorie -->
+    <!-- <div class="categorie">
+      
+      <div class="chart-container">
+        <h2>Vente par Catégorie</h2>
+        <canvas id="venteCategorieChart"></canvas>
+      </div>
+     
+      <div class="categories-list">
+        <h2>Liste des Catégories</h2>
+        <ul>
+          <li v-for="categorie in venteParCategorie" :key="categorie.label">
+            <span>{{ categorie.label }}</span>
+            <span>{{ formatCurrency(categorie.value) }}</span>
+          </li>
+        </ul>
+      </div>
+    </div> -->
+    
+    <!-- Évolution des ventes -->
+    <div class="chart-container">
+      <h2>Évolution des Ventes</h2>
+      <canvas id="evolutionVenteChart"></canvas>
+    </div>
+
+    <!-- Statut des commandes -->
+    <div class="chart-container">
+      <h2>Statut des Commandes</h2>
+      <canvas id="statusCommandeChart"></canvas>
+    </div>
+
+    <!-- Top des produits vendus -->
+    <div class="chart-container">
+      <h2>Top des Produits Vendus</h2>
+      <canvas id="topProduitsChart"></canvas>
+    </div>
+    <div class="stock-movements">
+        <h2>Mouvements de Stock</h2>
+        <ul>
+          <li v-for="movement in stockMovements" :key="movement.id">
+            <strong>Produit ID :</strong> {{ movement.product_id }}<br>
+            <strong>Quantité :</strong> {{ movement.qty }}<br>
+            <strong>Label :</strong> {{ movement.label || "Aucun label" }}<br>
+            <strong>Entrepôt ID :</strong> {{ movement.warehouse_id || "Non spécifié" }}
+          </li>
+        </ul>
+</div>
+    <!-- Liste des commandes payées -->
+    <div class="table-container">
+      <h2>Commandes Payées</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Client</th>
+            <th>Produit</th>
+            <th>Référence</th>
+            <!-- <th>Catégorie</th> -->
+            <th>Quantité</th>
+            <th>Total</th>
+            <th>Statut</th>
+            <th>N° Facture</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="commande in commandesPayees" :key="commande.id">
+            <td>{{ formatDate(commande.date) }}</td>
+            <td>{{ commande.client }}</td>
+            <td>{{ commande.produit }}</td>
+            <td>{{ commande.reference }}</td>
+            <!-- <td>{{ commande.categorie }}</td> -->
+            <td>{{ commande.quantite }}</td>
+            <td>{{ formatCurrency(commande.total) }}</td>
+            <td>{{ commande.status }}</td>
+            <td>{{ commande.facture }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Liste des commandes en attente -->
+    <div class="table-container">
+      <h2>Commandes en Attente</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Client</th>
+            <th>Produit</th>
+            <th>Référence</th>
+            <th>Catégorie</th>
+            <th>Quantité</th>
+            <th>Total</th>
+            <th>Statut</th>
+            <th>N° Facture</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="commande in commandesEnAttente" :key="commande.id">
+            <td>{{ formatDate(commande.date) }}</td>
+            <td>{{ getNomClientById(commande.socid) }}</td>
+            <td>{{ commande.produit }}</td>
+            <td>{{ commande.reference }}</td>
+            <td>{{ commande.categorie }}</td>
+            <td>{{ commande.quantite }}</td>
+            <td>{{ formatCurrency(commande.total) }}</td>
+            <td>{{ commande.status }}</td>
+            <td>{{ commande.facture }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+
 
 <style scoped>
 .dashboard-container {
@@ -809,5 +1015,28 @@ td {
 #venteCategorieChart, #statusCommandeChart {
   margin: 0 auto;
   max-width: 400px;
+}
+
+.stock-movements {
+  background-color: rgba(30, 30, 30, 0.9);
+  border-radius: 15px;
+  padding: 20px;
+  margin-top: 20px;
+  border: 1px solid rgba(177, 255, 54, 0.3);
+  color: white;
+}
+
+.stock-movements ul {
+  list-style: none;
+  padding: 0;
+}
+
+.stock-movements li {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stock-movements li:last-child {
+  border-bottom: none;
 }
 </style>

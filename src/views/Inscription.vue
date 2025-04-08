@@ -1,13 +1,16 @@
 <script>
 import Champ from '../components/Champ.vue';
 import Bouton from '../components/Bouton.vue';
+import Header from '../components/Header.vue';
+
 import axios from 'axios';
 
 export default {
   name: 'Inscription',
   components: {
     Champ,
-    Bouton
+    Bouton,
+    Header
   },
   data() {
     return {
@@ -110,6 +113,7 @@ export default {
 </script>
 
 <template>
+  <Header />
   <div class="container">
     <div class="formulaire">
       <div class="logo">
@@ -152,29 +156,30 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 /* Formulaire */
 .formulaire {
   width: 100%;
-  height: auto;
-  max-width: 900px;
+  max-width: 600px;
   padding: 40px;
   border: 3px solid #B1FF36;
-  border-radius: 60px;
-  background-color: transparent;
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
   display: flex;
-  justify-content: center;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  margin: 50px auto;
+  gap: 30px;
   position: relative;
+  color: white;
 }
 
 /* Logo */
 .logo {
-  width: 40%;
+  width: 500px;
   margin-bottom: 20px;
 }
 
@@ -182,17 +187,33 @@ export default {
   height: auto;
   max-height: 80px;
   width: auto;
-  position: relative;
   display: block;
   margin: 0 auto;
 }
 
 /* Champs */
 .champs {
-  width: 100%;
+  width: 80%;
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.champs input {
+  width: 80%;
+  padding: 12px 15px;
+  border: 2px solid #B1FF36;
+  border-radius: 5px;
+  background-color: transparent;
+  color: white;
+  font-size: 16px;
+  font-family: "AktivGrotesk-Regular", sans-serif;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.champs input:focus {
+  border-color: white;
 }
 
 /* Bouton personnalisé */
@@ -200,16 +221,31 @@ export default {
   background-color: #B1FF36;
   color: black;
   border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
+  padding: 12px 25px;
+  border-radius: 30px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: bold;
   text-transform: uppercase;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .custom-button:hover {
   background-color: white;
   color: black;
+  transform: scale(1.05);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .formulaire {
+    padding: 20px;
+    border-radius: 15px;
+  }
+
+  .custom-button {
+    font-size: 16px;
+    padding: 10px 20px;
+  }
 }
 </style>
