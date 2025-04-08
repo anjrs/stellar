@@ -18,7 +18,9 @@ export default {
       produits: [],
       emailConnecte: '',
       tiersName: '',
+      tiersId: '',
       categoriesMap: new Map(), // Pour stocker les catégories
+      newNote: {}
     }
   },
 
@@ -32,135 +34,161 @@ export default {
     }
 
     this.getProduit();
-    // 🔍 Test pour voir si la fonction est bien appelée
-    this.recupererCommandeIdExistante(); 
+    this.getCategories();
+    this.recupererCommandeIdExistante();
   },
 
   methods: {
-  async getProduit() {
-    try {
-      // 1. Récupérer tous les produits
-      const productsResponse = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/products', {
-        headers: {
-          'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-          'Accept': 'application/json'
-        },
-        params: {
-          limit: 100 // Ajustez selon vos besoins
-        }
-      });
-      
-      // Stocker temporairement les produits
-      const productsData = productsResponse.data;
-      this.produits = [];
-      
-      // 2. Pour chaque produit, récupérer ses catégories
-      for (const produit of productsData) {
-        // Appel à l'API pour obtenir les catégories du produit
-        try {
-          const categoriesResponse = await axios.get(
-            `http://localhost:7979/dolibarr/htdocs/api/index.php/products/${produit.id}/categories`, 
-            {
-              headers: {
-                'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-                'Accept': 'application/json'
+    // ===== FONCTIONS RELATIVES AUX PRODUITS =====
+    async getProduit() {
+      try {
+        // 1. Récupérer tous les produits
+        const productsResponse = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/products', {
+          headers: {
+            'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+            'Accept': 'application/json'
+          },
+          params: {
+            limit: 100 // Ajustez selon vos besoins
+          }
+        });
+        
+        // Stocker temporairement les produits
+        const productsData = productsResponse.data;
+        this.produits = [];
+        
+        // 2. Pour chaque produit, récupérer ses catégories
+        for (const produit of productsData) {
+          // Appel à l'API pour obtenir les catégories du produit
+          try {
+            const categoriesResponse = await axios.get(
+              `http://localhost:7979/dolibarr/htdocs/api/index.php/products/${produit.id}/categories`, 
+              {
+                headers: {
+                  'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+                  'Accept': 'application/json'
+                }
               }
-            }
-          );
-          
-          // Ajouter les informations de catégorie au produit
-          const categories = categoriesResponse.data || [];
-          const categorieLabels = categories.map(cat => cat.label).join(', ');
-          
-          this.produits.push({
-            ...produit,
-            categories: categories,
-            categorieLabel: categorieLabels || 'Non catégorisé'
-          });
-          
-        } catch (error) {
-          console.error(`Erreur lors de la récupération des catégories pour le produit ${produit.id}:`, error);
-          // En cas d'erreur, on ajoute quand même le produit mais sans catégorie
-          this.produits.push({
-            ...produit,
-            categories: [],
-            categorieLabel: 'Non catégorisé'
-          });
-        }
-      }
-      
-    } catch (error) {
-      console.error('Erreur lors de la récupération des produits:', error);
-    }
-  },
-  
-  // Méthode alternative qui fait moins d'appels API mais nécessite un traitement supplémentaire
-  async getProduitAlternative() {
-    try {
-      // 1. Récupérer tous les produits
-      const productsResponse = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/products', {
-        headers: {
-          'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-          'Accept': 'application/json'
-        }
-      });
-      
-      // 2. Récupérer toutes les catégories de produits
-      const categoriesResponse = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/categories?type=product', {
-        headers: {
-          'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-          'Accept': 'application/json'
-        }
-      });
-      
-      // 3. Récupérer toutes les associations produit-catégorie
-      const categoryProductsMap = new Map();
-      
-      for (const categorie of categoriesResponse.data) {
-        try {
-          const catProductsResponse = await axios.get(
-            `http://localhost:7979/dolibarr/htdocs/api/index.php/categories/${categorie.id}/products`,
-            {
-              headers: {
-                'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-                'Accept': 'application/json'
-              }
-            }
-          );
-          
-          // Pour chaque produit dans cette catégorie
-          for (const produit of catProductsResponse.data) {
-            if (!categoryProductsMap.has(produit.id)) {
-              categoryProductsMap.set(produit.id, []);
-            }
-            categoryProductsMap.get(produit.id).push({
-              id: categorie.id,
-              label: categorie.label
+            );
+            
+            // Ajouter les informations de catégorie au produit
+            const categories = categoriesResponse.data || [];
+            const categorieLabels = categories.map(cat => cat.label).join(', ');
+            
+            this.produits.push({
+              ...produit,
+              categories: categories,
+              categorieLabel: categorieLabels || 'Non catégorisé'
+            });
+            
+          } catch (error) {
+            console.error(`Erreur lors de la récupération des catégories pour le produit ${produit.id}:`, error);
+            // En cas d'erreur, on ajoute quand même le produit mais sans catégorie
+            this.produits.push({
+              ...produit,
+              categories: [],
+              categorieLabel: 'Non catégorisé'
             });
           }
-        } catch (error) {
-          console.error(`Erreur lors de la récupération des produits pour la catégorie ${categorie.id}:`, error);
         }
-      }
-      
-      // 4. Associer les catégories aux produits
-      this.produits = productsResponse.data.map(produit => {
-        const productCategories = categoryProductsMap.get(produit.id) || [];
-        const categorieLabels = productCategories.map(cat => cat.label).join(', ');
         
-        return {
-          ...produit,
-          categories: productCategories,
-          categorieLabel: categorieLabels || 'Non catégorisé'
-        };
-      });
-      
-    } catch (error) {
-      console.error('Erreur lors de la récupération des données:', error);
-    }
-  },
-  async getTiersIdByEmail(email)
-    {
+      } catch (error) {
+        console.error('Erreur lors de la récupération des produits:', error);
+      }
+    },
+    
+    async getProduitAlternative() {
+      try {
+        // 1. Récupérer tous les produits
+        const productsResponse = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/products', {
+          headers: {
+            'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+            'Accept': 'application/json'
+          }
+        });
+        
+        // 2. Récupérer toutes les catégories de produits
+        const categoriesResponse = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/categories?type=product', {
+          headers: {
+            'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+            'Accept': 'application/json'
+          }
+        });
+        
+        // 3. Récupérer toutes les associations produit-catégorie
+        const categoryProductsMap = new Map();
+        
+        for (const categorie of categoriesResponse.data) {
+          try {
+            const catProductsResponse = await axios.get(
+              `http://localhost:7979/dolibarr/htdocs/api/index.php/categories/${categorie.id}/products`,
+              {
+                headers: {
+                  'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+                  'Accept': 'application/json'
+                }
+              }
+            );
+            
+            // Pour chaque produit dans cette catégorie
+            for (const produit of catProductsResponse.data) {
+              if (!categoryProductsMap.has(produit.id)) {
+                categoryProductsMap.set(produit.id, []);
+              }
+              categoryProductsMap.get(produit.id).push({
+                id: categorie.id,
+                label: categorie.label
+              });
+            }
+          } catch (error) {
+            console.error(`Erreur lors de la récupération des produits pour la catégorie ${categorie.id}:`, error);
+          }
+        }
+        
+        // 4. Associer les catégories aux produits
+        this.produits = productsResponse.data.map(produit => {
+          const productCategories = categoryProductsMap.get(produit.id) || [];
+          const categorieLabels = productCategories.map(cat => cat.label).join(', ');
+          
+          return {
+            ...produit,
+            categories: productCategories,
+            categorieLabel: categorieLabels || 'Non catégorisé'
+          };
+        });
+        
+      } catch (error) {
+        console.error('Erreur lors de la récupération des données:', error);
+      }
+    },
+
+    // ===== FONCTIONS RELATIVES AUX CATÉGORIES =====
+    async getCategories() {
+      try {
+        const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/categories?type=product', {
+          headers: {
+            'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+            'Accept': 'application/json'
+          }
+        });
+
+        const categories = response.data;
+
+        // Créer un Map pour associer les IDs de catégories à leurs labels
+        const categoriesMap = new Map();
+        categories.forEach(category => {
+          categoriesMap.set(category.id, category.label);
+        });
+
+        this.categoriesMap = categoriesMap; // Stocker le Map dans le composant
+        console.log('Catégories récupérées :', this.categoriesMap);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des catégories :', error);
+      }
+    },
+
+    // ===== FONCTIONS RELATIVES AUX CLIENTS/TIERS =====
+    async getTiersIdByEmail(email) {
       try {
         const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/thirdparties', {
           headers: {
@@ -185,108 +213,8 @@ export default {
         console.error('Erreur lors de la récupération des tiers:', error);
       }
     },
-    
-    async recupererCommandeIdExistante() {
-  try {
-    const tiersId = localStorage.getItem('tiersId'); // Utilise l'ID du client
-    console.log('tiersId récupéré depuis localStorage :', tiersId);
 
-    if (!tiersId) {
-      console.log('Aucun client connecté.');
-      localStorage.removeItem('commandeId'); // Supprime l'ancienne commande
-      return null;
-    }
-
-    const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/orders', {
-      headers: {
-        'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-        'Accept': 'application/json'
-      }
-    });
-
-    const commandes = response.data;
-    console.log('Commandes récupérées depuis l\'API :', commandes);
-
-    // Trouver la commande associée au client connecté
-    const commandeClient = commandes.find(cmd => cmd.ref_client === tiersId);
-    console.log('Commande client trouvée :', commandeClient);
-
-    if (commandeClient && commandeClient.id) {
-      console.log('Commande ID retourné :', commandeClient.id);
-      localStorage.setItem('commandeId', String(commandeClient.id)); // Stocke l'ID de la commande
-      return commandeClient.id;
-    } else {
-      console.log("Aucune commande existante trouvée.");
-      localStorage.removeItem('commandeId'); // Supprime l'ancienne commande
-      return null;
-    }
-  } catch (error) {
-    console.error("Erreur lors de la récupération de la commande :", error);
-    localStorage.removeItem('commandeId'); // Supprime l'ancienne commande en cas d'erreur
-    return null;
-  }
-},
-
-async ajouterAuPanier(produit) {
-  try {
-    // Récupérer l'ID de la commande depuis le localStorage
-    let commandeId = localStorage.getItem('commandeId');
-    console.log('Commande ID récupéré depuis localStorage :', commandeId);
-
-    // Si aucune commande n'est trouvée dans le localStorage
-    if (!commandeId) {
-      console.log('Aucune commande ID trouvée dans localStorage. Récupération via API...');
-      commandeId = await this.recupererCommandeIdExistante();
-      console.log('Commande ID récupéré depuis l\'API :', commandeId);
-
-      if (!commandeId) {
-        alert("Aucune commande trouvée pour ce client.");
-        return;
-      }
-
-      // Stocker l'ID de la commande dans le localStorage
-      localStorage.setItem('commandeId', String(commandeId));
-      console.log('Commande ID stocké dans localStorage :', commandeId);
-    }
-
-    console.log('Ajout du produit à la commande ID :', commandeId);
-    console.log('Données du produit :', produit);
-
-    // Construction des données à envoyer
-    const ligneCommande = {
-      fk_product: produit.id,
-      qty: 1,
-      subprice: produit.price,
-      tva_tx: produit.tva_tx || 0,
-      remise_percent: 0,
-      price_base_type: "HT",
-      desc: produit.label || "Produit",
-      product_type: 0
-    };
-
-    console.log('Données envoyées à l’API :', ligneCommande);
-
-    // Envoi de la requête POST pour ajouter la ligne
-    const response = await axios.post(
-      `http://localhost:7979/dolibarr/htdocs/api/index.php/orders/${commandeId}/lines`,
-      ligneCommande,
-      {
-        headers: {
-          'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    console.log('Réponse de l\'API après ajout :', response.data);
-    alert(`Produit "${produit.label}" ajouté au panier.`);
-  } catch (error) {
-    console.error('Erreur lors de l\'ajout au panier :', error);
-    alert('Ajouté au panier');
-  }
-},
-
-async getSocIdByEmail(email) {
+    async getSocIdByEmail(email) {
       try {
         const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/thirdparties', {
           headers: {
@@ -301,162 +229,291 @@ async getSocIdByEmail(email) {
         console.error('Erreur dans getSocIdByEmail :', error);
         return null;
       }
-    } ,
+    },
 
-    async getCategories() {
-  try {
-    const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/categories?type=product', {
-      headers: {
-        'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-        'Accept': 'application/json'
+    // ===== FONCTIONS RELATIVES AUX COMMANDES/PANIER =====
+    async recupererCommandeIdExistante() {
+      try {
+        const tiersId = localStorage.getItem('tiersId'); // Utilise l'ID du client
+        console.log('tiersId récupéré depuis localStorage :', tiersId);
+
+        if (!tiersId) {
+          console.log('Aucun client connecté.');
+          localStorage.removeItem('commandeId'); // Supprime l'ancienne commande
+          return null;
+        }
+
+        const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/orders', {
+          headers: {
+            'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+            'Accept': 'application/json'
+          }
+        });
+
+        const commandes = response.data;
+        console.log('Commandes récupérées depuis l\'API :', commandes);
+
+        // Trouver la commande associée au client connecté
+        const commandeClient = commandes.find(cmd => cmd.ref_client === tiersId);
+        console.log('Commande client trouvée :', commandeClient);
+
+        if (commandeClient && commandeClient.id) {
+          console.log('Commande ID retourné :', commandeClient.id);
+          localStorage.setItem('commandeId', String(commandeClient.id)); // Stocke l'ID de la commande
+          return commandeClient.id;
+        } else {
+          console.log("Aucune commande existante trouvée.");
+          localStorage.removeItem('commandeId'); // Supprime l'ancienne commande
+          return null;
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération de la commande :", error);
+        localStorage.removeItem('commandeId'); // Supprime l'ancienne commande en cas d'erreur
+        return null;
       }
-    });
+    },
 
-    const categories = response.data;
+    async ajouterAuPanier(produit) {
+      try {
+        // Récupérer l'ID de la commande depuis le localStorage
+        let commandeId = localStorage.getItem('commandeId');
+        console.log('Commande ID récupéré depuis localStorage :', commandeId);
 
-    // Créer un Map pour associer les IDs de catégories à leurs labels
-    const categoriesMap = new Map();
-    categories.forEach(category => {
-      categoriesMap.set(category.id, category.label);
-    });
+        // Si aucune commande n'est trouvée dans le localStorage
+        if (!commandeId) {
+          console.log('Aucune commande ID trouvée dans localStorage. Récupération via API...');
+          commandeId = await this.recupererCommandeIdExistante();
+          console.log('Commande ID récupéré depuis l\'API :', commandeId);
 
-    this.categoriesMap = categoriesMap; // Stocker le Map dans le composant
-    console.log('Catégories récupérées :', this.categoriesMap);
+          if (!commandeId) {
+            alert("Aucune commande trouvée pour ce client.");
+            return;
+          }
+
+          // Stocker l'ID de la commande dans le localStorage
+          localStorage.setItem('commandeId', String(commandeId));
+          console.log('Commande ID stocké dans localStorage :', commandeId);
+        }
+
+        console.log('Ajout du produit à la commande ID :', commandeId);
+        console.log('Données du produit :', produit);
+
+        // Construction des données à envoyer
+        const ligneCommande = {
+          fk_product: produit.id,
+          qty: 1,
+          subprice: produit.price,
+          tva_tx: produit.tva_tx || 0,
+          remise_percent: 0,
+          price_base_type: "HT",
+          desc: produit.label || "Produit",
+          product_type: 0
+        };
+
+        console.log('Données envoyées à l API :', ligneCommande);
+
+        // Envoi de la requête POST pour ajouter la ligne
+        const response = await axios.post(
+          `http://localhost:7979/dolibarr/htdocs/api/index.php/orders/${commandeId}/lines`,
+          ligneCommande,
+          {
+            headers: {
+              'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        console.log('Réponse de l\'API après ajout :', response.data);
+        alert(`Produit "${produit.label}" ajouté au panier.`);
+      } catch (error) {
+        console.error('Erreur lors de l\'ajout au panier :', error);
+        alert('Ajouté au panier');
+      }
+    },
+
+    // ===== FONCTIONS RELATIVES AUX NOTES =====
+    getCurrentNote(produit) {
+      // Vérifie si le produit a une note dans ses options
+      return produit.array_options?.options_note || 0; // Retourne 0 si aucune note n'existe
+    },
+
+    async updateNote({ produit, note }) {
+  try {
+    // Vérifiez si le produit est défini
+    if (!produit || !produit.id) {
+      console.error('Produit non défini ou ID manquant.');
+      return;
+    }
+
+    // Vérifiez si une nouvelle note est disponible
+    const userNote = parseFloat(note) || 0;
+    if (!userNote) {
+      console.error('Nouvelle note non définie ou invalide.');
+      return;
+    }
+
+    // Récupérez la note actuelle (par défaut 0 si elle n'existe pas)
+    const currentNote = parseFloat(this.getCurrentNote(produit)) || 0;
+
+    // Si la note actuelle est 0 ou undefined, utilisez directement la nouvelle note
+    const nouvelleNote = currentNote === 0 ? userNote : (currentNote + userNote) / 2;
+
+    // Mettez à jour le produit sur le serveur
+    const response = await axios.put(
+      `http://localhost:7979/dolibarr/htdocs/api/index.php/products/${produit.id}`,
+      {
+        array_options: {
+          options_note: nouvelleNote
+        }
+      },
+      {
+        headers: {
+          'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Accept-Encoding': 'identity'
+        }
+      },
+    );
+
+    // Vérifiez si la mise à jour a réussi
+    if (response.status === 200) {
+      console.log(`✅ Note mise à jour pour le produit ${produit.id} : ${nouvelleNote}`);
+      // Mettez à jour la note du produit localement
+      produit.array_options = produit.array_options || {};
+      produit.array_options['options_note'] = nouvelleNote;
+    } else {
+      console.error(`❌ Échec de la mise à jour pour le produit ${produit.id}`);
+    }
   } catch (error) {
-    console.error('Erreur lors de la récupération des catégories :', error);
+    console.error(`Erreur lors de la mise à jour de la note pour le produit ${produit.id} :`, error);
   }
 },
-},
-
-    
   }
-
+};
 </script>
 
 <template>
-    <Header />
-    <div class="container">
-        <div class="texte">
-            <h1>Bienvenue {{ tiersName }}</h1> 
-            <h2>Découvrez nos produits</h2>
-        </div>
-        <div class="rechercheEtBouton">
-            <div class="searchBar">
-                <Champ placeholder="Rechercher un produit" type="text"/> 
-            </div>
-            <Bouton class="bouton">
-                RECHERCHER
-            </Bouton>
-        </div>
-        <div class="carteContainer">
-            <CarteProduit
-                v-for="produit in produits"
-                :key="produit.id"
-                :produit="produit"
-                
-                @ajouter="ajouterAuPanier(produit)"
-            >
-                <template #categorie>
-                    {{ produit.categorieLabel }}
-                </template>
-                <template #nom>
-                    {{ produit.label }}
-                </template>
-                <template #prix>
-                    {{ parseFloat(produit.price).toLocaleString() }} Ariary HT
-                </template>
-              </CarteProduit>
-              
-        </div>
-        
+  <Header />
+  <div class="container">
+    <div class="texte">
+      <h1>Bienvenue {{ tiersName }}</h1> 
+      <h2>Découvrez nos produits</h2>
     </div>
+    <div class="rechercheEtBouton">
+      <div class="searchBar">
+        <Champ placeholder="Rechercher un produit" type="text"/> 
+      </div>
+      <Bouton class="bouton">
+        RECHERCHER
+      </Bouton>
+    </div>
+    <div class="carteContainer">
+      <CarteProduit
+        v-for="produit in produits"
+        :key="produit.id"
+        :produit="produit"
+        @update-note="updateNote"
+        @ajouter="ajouterAuPanier(produit)"
+      >
+        <template #categorie>
+          {{ produit.categorieLabel }}
+        </template>
+        <template #nom>
+          {{ produit.label }}
+        </template>
+        <template #noteActuelle>
+          {{ getCurrentNote(produit) }} 
+        </template>
+      </CarteProduit>  
+    </div>
+  </div>
 </template>
 
 <style scoped>
 .container {
-    width: 100vw;
-    height: 100vh;
-    padding-top: 70px; /* Évite que le contenu soit caché par le header */
-    background-color: black;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start; /* Aligne tout en haut */
+  width: 100vw;
+  height: 500vh;
+  padding-top: 70px; /* Évite que le contenu soit caché par le header */
+  background-color: black;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start; /* Aligne tout en haut */
 }
+
 .texte {
-    text-align: center; /* Centre le texte horizontalement */
-    margin-bottom: 20px; /* Espace sous le bloc texte */
+  text-align: center; /* Centre le texte horizontalement */
+  margin-bottom: 20px; /* Espace sous le bloc texte */
 }
 
 .texte h1 {
-    font-family: "AktivGrotesk-Regular", sans-serif; /* Police personnalisée */
-    font-size: 36px; /* Taille du texte */
-    color: #B1FF36; /* Couleur verte */
-    margin-bottom: 10px; /* Espace sous le titre */
-    text-transform: uppercase; /* Met le texte en majuscules */
-    letter-spacing: 2px; /* Espacement entre les lettres */
+  font-family: "AktivGrotesk-Regular", sans-serif; /* Police personnalisée */
+  font-size: 36px; /* Taille du texte */
+  color: #B1FF36; /* Couleur verte */
+  margin-bottom: 10px; /* Espace sous le titre */
+  text-transform: uppercase; /* Met le texte en majuscules */
+  letter-spacing: 2px; /* Espacement entre les lettres */
 }
 
 .texte h2 {
-    font-family: "AktivGrotesk-Regular", sans-serif; /* Police personnalisée */
-    font-size: 24px; /* Taille du texte */
-    color: #FFFFFF; /* Couleur blanche */
-    margin-bottom: 20px; /* Espace sous le sous-titre */
-    font-weight: 300; /* Poids de la police plus léger */
+  font-family: "AktivGrotesk-Regular", sans-serif; /* Police personnalisée */
+  font-size: 24px; /* Taille du texte */
+  color: #FFFFFF; /* Couleur blanche */
+  margin-bottom: 20px; /* Espace sous le sous-titre */
+  font-weight: 300; /* Poids de la police plus léger */
 }
 
 .texte p {
-    font-family: "AktivGrotesk-Regular", sans-serif; /* Police personnalisée */
-    font-size: 18px; /* Taille du texte */
-    color: #CCCCCC; /* Couleur grise */
-    line-height: 1.6; /* Hauteur de ligne pour améliorer la lisibilité */
-    margin-bottom: 15px; /* Espace sous le paragraphe */
+  font-family: "AktivGrotesk-Regular", sans-serif; /* Police personnalisée */
+  font-size: 18px; /* Taille du texte */
+  color: #CCCCCC; /* Couleur grise */
+  line-height: 1.6; /* Hauteur de ligne pour améliorer la lisibilité */
+  margin-bottom: 15px; /* Espace sous le paragraphe */
 }
+
 .rechercheEtBouton {
-    width: 100%;
-    display: flex;
-    flex-direction: row; /* Aligne les éléments horizontalement */
-    align-items: center; /* Centre verticalement les éléments */
-    justify-content: left; /* Centre horizontalement les éléments */
-    gap: 0px; /* Espace entre la barre de recherche et le bouton */
-    margin-bottom: 60px; /* Espace en bas */
-    padding-left: 50px; /* Espace à gauche et à droite */
+  width: 100%;
+  display: flex;
+  flex-direction: row; /* Aligne les éléments horizontalement */
+  align-items: center; /* Centre verticalement les éléments */
+  justify-content: left; /* Centre horizontalement les éléments */
+  gap: 0px; /* Espace entre la barre de recherche et le bouton */
+  margin-bottom: 60px; /* Espace en bas */
+  padding-left: 50px; /* Espace à gauche et à droite */
 }
 
 .searchBar {
-    font-family: "AktivGrotesk-Regular", sans-serif;
-    font-size: 16px;
-    color: #B1FF36;
-    background-color: transparent;
-    /* border: 2px solid #B1FF36; Ajout d'une bordure verte */
-    border-radius: 30px;
-    padding: 10px 20px; /* Espacement interne */
-    display: flex;
-    align-items: center; /* Centre verticalement le contenu */
-    justify-content: flex-start; /* Aligne le texte à gauche */
-    transition: all 0.3s ease;
-    width: 100%; /* Prend toute la largeur disponible */
-    max-width: 300px; /* Limite la largeur maximale */
-    height: 40px; /* Hauteur ajustée */
+  font-family: "AktivGrotesk-Regular", sans-serif;
+  font-size: 16px;
+  color: #B1FF36;
+  background-color: transparent;
+  /* border: 2px solid #B1FF36; Ajout d'une bordure verte */
+  border-radius: 30px;
+  padding: 10px 20px; /* Espacement interne */
+  display: flex;
+  align-items: center; /* Centre verticalement le contenu */
+  justify-content: flex-start; /* Aligne le texte à gauche */
+  transition: all 0.3s ease;
+  width: 100%; /* Prend toute la largeur disponible */
+  max-width: 300px; /* Limite la largeur maximale */
+  height: 40px; /* Hauteur ajustée */
 }
 
 .carteContainer {
-    width: 90%;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center; /* Centre les cartes horizontalement */
-    gap: 40px; /* Espace entre les cartes */
+  width: 90%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center; /* Centre les cartes horizontalement */
+  gap: 40px; /* Espace entre les cartes */
 }
 
-.champs
-{
-    width: 80%;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    margin-top: 10%;
+.champs {
+  width: 80%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 10%;
 }
-
-
-
 </style>

@@ -1,66 +1,107 @@
 <script>
 import Bouton from './Bouton.vue';
+import Note from './Note.vue';
+import axios from 'axios';
 
 export default {
   name: 'CarteProduit',
-  components:
-  {
-    Bouton
+  components: {
+    Bouton,
+    Note
   },
-  props:
-  {
-    
+  props: {
     produit: {
-    type: Object,
-    required: true
-  },
-  image: {
-    type: String,
-    default: '/assets/produit1.jpg' // Image par défaut
-  }
-  },
-  methods :
-  {
-    ajouterAuPanier() {
-      // Lever un événement personnalisé pour informer le parent
-      this.$emit('ajouter', this.produit);
+      type: Object,
+      required: true
+    },
+    image: {
+      type: String,
+      default: '/assets/produit1.jpg'
     }
   },
+  data() {
+    return {
+      noteMoyenne: '0.0'
+    };
+  },
+  mounted() {
+    this.calculerNoteMoyenne();
+  },
+  watch: {
+    'produit.array_options.options_note': {
+      handler() {
+        this.calculerNoteMoyenne();
+      }
+    }
+  },
+  methods: {
+    // Méthodes liées aux notes
+    calculerNoteMoyenne() {
+      if (!this.produit.array_options?.options_note) {
+        this.noteMoyenne = '0.0';
+        return;
+      }
+
+      // Récupérer les notes sous forme de chaîne de caractères, puis les convertir en tableau de nombres
+      const notes = this.produit.array_options.options_note
+        .split(',')
+        .map(Number);
+
+      // Calculer la somme des notes
+      const somme = notes.reduce((acc, note) => acc + note, 0);
+      this.noteMoyenne = (somme / notes.length).toFixed(1);
+    },
+    handleRate({ produit, note }) {
+      const ancienne = produit.array_options.options_note || '';
+      produit.array_options.options_note = ancienne ? `${ancienne},${note}` : `${note}`;
+      
+      // La note moyenne sera mise à jour automatiquement par le watcher
+      
+      // Émettre un événement pour que le composant parent puisse gérer la mise à jour de la note
+      this.$emit('update-note', { produit: this.produit , note}),
+      console.log(`Produit:  ${produit.ref}, Note ajoutée : ${note}, Nouvelle moyenne : ${this.noteMoyenne}`);
+
+      },
+
+    },
+    
+    // Méthodes liées au panier
+    ajouterAuPanier() {
+      this.$emit('ajouter', this.produit);
+    }
   };
 
 </script>
 
 <template>
   <div class="carte">
+    <!-- Section photo produit -->
     <div class="photoProduit">
-      <!-- La photo dans un carré arrondi -->
-      <img :src="image" alt="Photo du produit" class="image" />
-      
-      <!-- Catégorie du produit -->
+      <img :src="produit.image || image" alt="Photo du produit" class="image" />
       <div class="categorie">
-        <slot name="categorie">Categorie</slot> <!-- Slot pour la catégorie -->
+        <slot name="categorie">Catégorie</slot>
       </div>
     </div>
-    
+
+    <!-- Section détails et actions -->
     <div class="other">
+      <!-- Informations produit -->
       <div class="detail">
-        <!-- Nom et prix alignés -->
         <span class="nom">
-          <slot name="nom">Nom du produit</slot> <!-- Slot pour le nom -->
+          <slot name="nom">{{ produit.nom || 'Nom du produit' }}</slot>
         </span>
         <span class="prix">
-          <slot name="prix">Prix du produit</slot> <!-- Slot pour le prix -->
+          Note moyenne : {{ noteMoyenne }}
         </span>
       </div>
-      
+
+      <!-- Système de notation -->
+      <Note :produit="produit" @rate="handleRate" />
+
+      <!-- Actions sur le produit -->
       <div class="boutons">
-        <!-- Les boutons sont alignés -->
-        <button class="custom-button" @click="ajouterAuPanier">
-          AJOUTER
-        </button>
-        <button class="custom-button">
-          ACHETER
-        </button>
+        <button class="custom-button" @click="$emit('moins', produit)">ACHETER</button>
+        <button class="custom-button" @click="ajouterAuPanier">AJOUTER</button>
       </div>
     </div>
   </div>
@@ -79,27 +120,27 @@ export default {
   flex-direction: column;
 }
 
+/* Partie image et catégorie */
 .photoProduit {
   position: relative;
-  height: 300px; /* Définit la hauteur du div contenant l'image */
-  width: 100%; /* Assure que la largeur est complète */
+  height: 300px;
+  width: 100%;
   background-color: transparent;
-  overflow: hidden; /* Empêche que l'image dépasse du conteneur */
+  overflow: hidden;
 }
 
 .image {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* Cette propriété permet à l'image de couvrir tout le div sans déformation */
-  object-position: center; /* Centre l'image dans le div */
-  /* Arrondir les bords de l'image */
+  object-fit: cover;
+  object-position: center;
 }
 
 .categorie {
   position: absolute;
   top: 10px;
   right: 10px;
-  background-color: #B1FF36;  /* Couleur similaire à celle du bouton */
+  background-color: #B1FF36;
   padding: 5px 15px;
   border-radius: 25px;
   font-family: "AktivGrotesk-Regular", sans-serif;
@@ -108,6 +149,7 @@ export default {
   text-transform: uppercase;
 }
 
+/* Partie détails et actions */
 .other {
   padding: 15px;
   display: flex;
@@ -126,7 +168,7 @@ export default {
 
 .nom {
   font-weight: bold;
-  color: white
+  color: white;
 }
 
 .prix {
@@ -134,6 +176,7 @@ export default {
   font-weight: bold;
 }
 
+/* Boutons d'action */
 .boutons {
   display: flex;
   justify-content: space-between;
@@ -154,12 +197,11 @@ export default {
   justify-content: center;
   transition: all 0.3s ease;
   width: 70%;
-  max-width: 130px;  /* Limiter la largeur du bouton */
+  max-width: 130px;
 }
 
-.custom-button:hover
-  {
-    background-color: #B1FF36; /* Effet léger au hover */
-    color: #000; /* Changement de couleur du texte au hover */
-  }
+.custom-button:hover {
+  background-color: #B1FF36;
+  color: #000;
+}
 </style>
