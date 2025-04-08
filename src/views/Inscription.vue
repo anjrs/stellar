@@ -139,6 +139,12 @@ export default {
           placeholder="Entrez votre numéro de téléphone" 
           v-model="phone" 
         />
+        <Champ 
+          type="password"
+          label="Mot de passe"" 
+          placeholder="Entrez votre mot de passe" 
+          v-model="phone" 
+        />
         <Bouton class="custom-button" @click="submitForm">
           S'INSCRIRE
         </Bouton>

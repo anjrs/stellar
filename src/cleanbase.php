@@ -3,7 +3,7 @@
 $host = 'localhost';
 $db   = 'dolibarr';        // Replace with your Dolibarr DB name
 $user = 'root';            // Replace with your MySQL username
-$pass = 'base';                // Replace with your MySQL password
+$pass = '';                // Replace with your MySQL password
 $charset = 'utf8mb4';
 
 // === SETUP CONNECTION === //
