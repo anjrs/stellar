@@ -14,6 +14,10 @@ export default {
     type: Object,
     required: true
   },
+  image: {
+    type: String,
+    default: '/assets/produit1.jpg' // Image par défaut
+  }
   },
   methods :
   {
@@ -30,7 +34,7 @@ export default {
   <div class="carte">
     <div class="photoProduit">
       <!-- La photo dans un carré arrondi -->
-     
+      <img :src="image" alt="Photo du produit" class="image" />
       
       <!-- Catégorie du produit -->
       <div class="categorie">
