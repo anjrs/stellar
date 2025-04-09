@@ -62,14 +62,16 @@ export default {
       console.log(`Produit:  ${produit.ref}, Note ajoutée : ${note}, Nouvelle moyenne : ${this.noteMoyenne}`);
 
       },
+       // Méthodes liées au panier
+    ajouterAuPanier() {
+    console.log('Produit ajouté au panier :', this.produit);
+    this.$emit('ajouter', this.produit); // Émet l'objet produit
 
     },
     
-    // Méthodes liées au panier
-    ajouterAuPanier() {
-      this.$emit('ajouter', this.produit);
-    }
-  };
+   
+  }
+};
 
 </script>
 
@@ -91,17 +93,20 @@ export default {
           <slot name="nom">{{ produit.nom || 'Nom du produit' }}</slot>
         </span>
         <span class="prix">
-          Note moyenne : {{ noteMoyenne }}
+          Prix HT : {{ produit.price }}
         </span>
       </div>
 
       <!-- Système de notation -->
-      <Note :produit="produit" @rate="handleRate" />
+      <!-- <Note :produit="produit" @rate="handleRate" /> -->
 
       <!-- Actions sur le produit -->
       <div class="boutons">
-        <button class="custom-button" @click="$emit('moins', produit)">ACHETER</button>
-        <button class="custom-button" @click="ajouterAuPanier">AJOUTER</button>
+        <!-- <button class="custom-button" @click="$emit('moins', produit)">ACHETER</button> -->
+        <Bouton class="custom-button" @click="ajouterAuPanier">
+          AJOUTER
+        </Bouton>
+        <!-- <button class="custom-button" @click="() => console.log('Bouton AJOUTER cliqué')">AJOUTER</button> -->
       </div>
     </div>
   </div>

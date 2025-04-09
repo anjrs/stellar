@@ -16,7 +16,7 @@
               <th>Total TTC</th>
               <th>Total HT</th>
               <th>Statut</th>
-              <!-- <th>Facture</th> -->
+              <th>Facture</th>
             </tr>
           </thead>
           <tbody>
@@ -30,6 +30,9 @@
                 <span :class="getStatusClass(commande.status)">
                   {{ getStatusText(commande) }}
                 </span>
+              </td>
+              <td>
+                <router-link to="/facture">Facture</router-link>
               </td>
 
               <!-- <td> -->
@@ -90,6 +93,17 @@ export default {
         // Filtrer les commandes associées au client connecté et exclure les brouillons
         this.commandes = orders.filter(order => order.ref_client === tiersId && order.status !== "0");
         console.log("Commandes filtrées :", this.commandes);
+
+        this.commandes = orders.filter(order => order.ref_client === tiersId && order.status !== "0");
+    console.log("Commandes filtrées :", this.commandes);
+
+    // Récupérer les commandes facturées
+    const facturedOrders = this.commandes.filter(order => order.status === "1");
+    const facturedOrderIds = facturedOrders.map(order => order.id);
+
+    // Stocker les IDs des commandes facturées dans le localStorage
+    localStorage.setItem("facturedOrders", JSON.stringify(facturedOrderIds));
+    console.log("IDs des commandes facturées stockées dans localStorage :", facturedOrderIds);
       } catch (error) {
         console.error("Erreur lors de la récupération des commandes :", error);
       }

@@ -16,7 +16,7 @@ DELETE FROM llx_propal WHERE date_creation >= NOW() - INTERVAL 1 DAY;
 DELETE FROM llx_actioncomm WHERE date_creation >= NOW() - INTERVAL 1 DAY;
 
 
-curl -X GET "http://localhost:7979/dolibarr/htdocs/api/index.php/products" -H "DOLAPIKEY: 8a8MsnQGo371to4oVLWk552rIhNUFIt8" -H "Accept: application/json"
+curl -X GET "http://localhost:7979/dolibarr/htdocs/api/index.php/invoices/SO2504-0001" -H "DOLAPIKEY: 8a8MsnQGo371to4oVLWk552rIhNUFIt8" -H "Accept: application/json"
 
 curl -X POST http://localhost:7979/dolibarr/htdocs/api/index.php/orders/2/lines -H "DOLAPIKEY: 8a8MsnQGo371to4oVLWk552rIhNUFIt8" -H "Content-Type: application/json" -d '{"fk_product": 1, "qty": 1, "subprice": 1000}'
 curl -X PUT "http://localhost:7979/dolibarr/htdocs/api/index.php/products/47" \
@@ -24,3 +24,6 @@ curl -X PUT "http://localhost:7979/dolibarr/htdocs/api/index.php/products/47" \
 -H "Content-Type: application/json" \
 -d "{\"note\": 4.5}"
 curl -X GET "http://localhost:7979/dolibarr/htdocs/api/index.php/products/47" -H "DOLAPIKEY: 8a8MsnQGo371to4oVLWk552rIhNUFIt8" -H "Accept: application/json"
+
+
+curl -X GET "http://localhost:7979/dolibarr/htdocs/api/index.php/invoices?sortfield=t.rowid&limit=100" -H "DOLAPIKEY: 8a8MsnQGo371to4oVLWk552rIhNUFIt8" -H "Accept: application/json"

@@ -24,19 +24,24 @@ export default {
     }
   },
 
-  mounted() {
-    this.emailConnecte = localStorage.getItem('emailConnecte');
-    this.tiersName = localStorage.getItem('tiersName');
-    this.tiersId = localStorage.getItem('tiersId');
+// Dans Produits.vue - modifications dans la méthode mounted()
+mounted() {
+  this.emailConnecte = localStorage.getItem('emailConnecte');
+  this.tiersName = localStorage.getItem('tiersName');
+  this.tiersId = localStorage.getItem('tiersId');
 
-    if (this.emailConnecte) {
-      this.getTiersIdByEmail(this.emailConnecte);
-    }
+  if (this.emailConnecte) {
+    // Modifié pour s'assurer que tiersId est bien défini
+    this.getTiersIdByEmail(this.emailConnecte).then(() => {
+      // Ne récupérer la commande qu'après avoir obtenu l'ID du tiers
+      this.recupererCommandeIdExistante();
+    });
+  }
 
-    this.getProduit();
-    this.getCategories();
-    this.recupererCommandeIdExistante();
-  },
+  this.getProduit();
+  this.getCategories();
+},
+
 
   methods: {
     // ===== FONCTIONS RELATIVES AUX PRODUITS =====
@@ -188,150 +193,189 @@ export default {
     },
 
     // ===== FONCTIONS RELATIVES AUX CLIENTS/TIERS =====
-    async getTiersIdByEmail(email) {
-      try {
-        const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/thirdparties', {
-          headers: {
-            'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-            'Accept': 'application/json'
-          }
-        });
-
-        const tiers = response.data;
-        const foundTiers = tiers.find(tier => tier.email === email);
-
-        if (foundTiers) {
-          localStorage.setItem('tiersName', foundTiers.name);
-          this.tiersName = foundTiers.name;
-          console.log("✅ Client trouvé :", this.tiersName);
-        } else {
-          localStorage.removeItem('tiersName');
-          this.tiersName = '';
-          console.log("❌ Aucun tiers trouvé avec cet email.");
-        }
-      } catch (error) {
-        console.error('Erreur lors de la récupération des tiers:', error);
+    // Mise à jour de getTiersIdByEmail pour définir tiersId
+async getTiersIdByEmail(email) {
+  try {
+    const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/thirdparties', {
+      headers: {
+        'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+        'Accept': 'application/json'
       }
-    },
+    });
 
-    async getSocIdByEmail(email) {
-      try {
-        const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/thirdparties', {
-          headers: {
-            'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-            'Accept': 'application/json'
-          }
-        });
+    const tiers = response.data;
+    const foundTiers = tiers.find(tier => tier.email === email);
 
-        const tiers = response.data.find(tier => tier.email === email);
-        return tiers ? tiers.id : null;
-      } catch (error) {
-        console.error('Erreur dans getSocIdByEmail :', error);
-        return null;
+    if (foundTiers) {
+      localStorage.setItem('tiersName', foundTiers.name);
+      localStorage.setItem('tiersId', foundTiers.id); // Ajout crucial
+      this.tiersName = foundTiers.name;
+      this.tiersId = foundTiers.id; // Ajout crucial
+      console.log("✅ Client trouvé :", this.tiersName, "avec ID:", this.tiersId);
+      return foundTiers.id;
+    } else {
+      localStorage.removeItem('tiersName');
+      localStorage.removeItem('tiersId'); // Ajout crucial
+      this.tiersName = '';
+      this.tiersId = '';
+      console.log("❌ Aucun tiers trouvé avec cet email.");
+      return null;
+    }
+  } catch (error) {
+    console.error('Erreur lors de la récupération des tiers:', error);
+    return null;
+  }
+},
+
+// Modification de recupererCommandeIdExistante pour mieux gérer les cas d'erreur
+async recupererCommandeIdExistante() {
+  try {
+    const tiersId = this.tiersId || localStorage.getItem('tiersId'); // Utilise l'ID du client
+    console.log('tiersId utilisé pour rechercher les commandes:', tiersId);
+
+    if (!tiersId) {
+      console.log('Aucun client connecté.');
+      localStorage.removeItem('commandeId'); // Supprime l'ancienne commande
+      return null;
+    }
+
+    const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/orders', {
+      headers: {
+        'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+        'Accept': 'application/json'
       }
-    },
+    });
 
-    // ===== FONCTIONS RELATIVES AUX COMMANDES/PANIER =====
-    async recupererCommandeIdExistante() {
-      try {
-        const tiersId = localStorage.getItem('tiersId'); // Utilise l'ID du client
-        console.log('tiersId récupéré depuis localStorage :', tiersId);
+    const commandes = response.data;
+    console.log('Commandes récupérées depuis l\'API :', commandes);
 
-        if (!tiersId) {
-          console.log('Aucun client connecté.');
-          localStorage.removeItem('commandeId'); // Supprime l'ancienne commande
-          return null;
+    // Vérifiez le format exact des données retournées pour vous assurer que la condition est correcte
+    // Il est possible que vous deviez utiliser cmd.socid ou un autre champ pour identifier le client
+    const commandeClient = commandes.find(cmd => 
+      cmd.socid === parseInt(tiersId) || 
+      cmd.ref_client === tiersId ||
+      cmd.socid === tiersId // Essayez différentes options selon votre structure de données
+    );
+    
+    console.log('Commande client trouvée :', commandeClient);
+
+    if (commandeClient && commandeClient.id) {
+      console.log('Commande ID retourné :', commandeClient.id);
+      localStorage.setItem('commandeId', String(commandeClient.id)); // Stocke l'ID de la commande
+      return commandeClient.id;
+    } else {
+      console.log("Aucune commande existante trouvée, création d'une nouvelle commande...");
+      // Si aucune commande n'existe, créez-en une nouvelle
+      return await this.creerNouvelleCommande(tiersId);
+    }
+  } catch (error) {
+    console.error("Erreur lors de la récupération de la commande :", error);
+    localStorage.removeItem('commandeId'); // Supprime l'ancienne commande en cas d'erreur
+    return null;
+  }
+},
+
+// Ajout d'une méthode pour créer une nouvelle commande si aucune n'existe
+async creerNouvelleCommande(tiersId) {
+  try {
+    console.log('Création d\'une nouvelle commande pour le client:', tiersId);
+    
+    const nouvelleCommande = {
+      socid: parseInt(tiersId),
+      ref_client: tiersId.toString(),
+      date: Math.floor(Date.now() / 1000), // Date actuelle en timestamp
+      type: 0, // Type standard
+      status: 0 // Brouillon
+    };
+    
+    const response = await axios.post(
+      'http://localhost:7979/dolibarr/htdocs/api/index.php/orders',
+      nouvelleCommande,
+      {
+        headers: {
+          'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
-
-        const response = await axios.get('http://localhost:7979/dolibarr/htdocs/api/index.php/orders', {
-          headers: {
-            'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-            'Accept': 'application/json'
-          }
-        });
-
-        const commandes = response.data;
-        console.log('Commandes récupérées depuis l\'API :', commandes);
-
-        // Trouver la commande associée au client connecté
-        const commandeClient = commandes.find(cmd => cmd.ref_client === tiersId);
-        console.log('Commande client trouvée :', commandeClient);
-
-        if (commandeClient && commandeClient.id) {
-          console.log('Commande ID retourné :', commandeClient.id);
-          localStorage.setItem('commandeId', String(commandeClient.id)); // Stocke l'ID de la commande
-          return commandeClient.id;
-        } else {
-          console.log("Aucune commande existante trouvée.");
-          localStorage.removeItem('commandeId'); // Supprime l'ancienne commande
-          return null;
-        }
-      } catch (error) {
-        console.error("Erreur lors de la récupération de la commande :", error);
-        localStorage.removeItem('commandeId'); // Supprime l'ancienne commande en cas d'erreur
-        return null;
       }
-    },
+    );
+    
+    if (response.data && response.data.id) {
+      console.log('Nouvelle commande créée avec ID:', response.data.id);
+      localStorage.setItem('commandeId', String(response.data.id));
+      return response.data.id;
+    } else {
+      console.error('Échec de création de la commande, réponse:', response.data);
+      return null;
+    }
+  } catch (error) {
+    console.error('Erreur lors de la création de la commande:', error);
+    return null;
+  }
+},
 
-    async ajouterAuPanier(produit) {
-      try {
-        // Récupérer l'ID de la commande depuis le localStorage
-        let commandeId = localStorage.getItem('commandeId');
-        console.log('Commande ID récupéré depuis localStorage :', commandeId);
+// Mise à jour de la méthode ajouterAuPanier
+async ajouterAuPanier(produit) {
+  console.log('🛒 Produit reçu dans le parent :', produit);
+  try {
+    // Vérifier que l'utilisateur est connecté
+    if (!this.tiersId) {
+      alert("Vous devez être connecté pour ajouter des produits au panier.");
+      return;
+    }
+    
+    // Récupérer l'ID de la commande
+    let commandeId = localStorage.getItem('commandeId');
+    console.log('Commande ID récupéré depuis localStorage :', commandeId);
 
-        // Si aucune commande n'est trouvée dans le localStorage
-        if (!commandeId) {
-          console.log('Aucune commande ID trouvée dans localStorage. Récupération via API...');
-          commandeId = await this.recupererCommandeIdExistante();
-          console.log('Commande ID récupéré depuis l\'API :', commandeId);
-
-          if (!commandeId) {
-            alert("Aucune commande trouvée pour ce client.");
-            return;
-          }
-
-          // Stocker l'ID de la commande dans le localStorage
-          localStorage.setItem('commandeId', String(commandeId));
-          console.log('Commande ID stocké dans localStorage :', commandeId);
-        }
-
-        console.log('Ajout du produit à la commande ID :', commandeId);
-        console.log('Données du produit :', produit);
-
-        // Construction des données à envoyer
-        const ligneCommande = {
-          fk_product: produit.id,
-          qty: 1,
-          subprice: produit.price,
-          tva_tx: produit.tva_tx || 0,
-          remise_percent: 0,
-          price_base_type: "HT",
-          desc: produit.label || "Produit",
-          product_type: 0
-        };
-
-        console.log('Données envoyées à l API :', ligneCommande);
-
-        // Envoi de la requête POST pour ajouter la ligne
-        const response = await axios.post(
-          `http://localhost:7979/dolibarr/htdocs/api/index.php/orders/${commandeId}/lines`,
-          ligneCommande,
-          {
-            headers: {
-              'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        console.log('Réponse de l\'API après ajout :', response.data);
-        alert(`Produit "${produit.label}" ajouté au panier.`);
-      } catch (error) {
-        console.error('Erreur lors de l\'ajout au panier :', error);
-        alert('Ajouté au panier');
+    // Si aucune commande n'existe, en créer une nouvelle
+    if (!commandeId) {
+      console.log('Aucune commande ID trouvée. Tentative de récupération ou création...');
+      commandeId = await this.recupererCommandeIdExistante();
+      
+      if (!commandeId) {
+        alert("Impossible de créer ou récupérer une commande pour ce client.");
+        return;
       }
-    },
+    }
 
+    console.log('Ajout du produit à la commande ID :', commandeId);
+    console.log('Données du produit :', produit);
+
+    // Construction des données pour la ligne de commande
+    const ligneCommande = {
+      fk_product: produit.id,
+      qty: 1,
+      subprice: produit.price,
+      tva_tx: produit.tva_tx || 0,
+      remise_percent: 0,
+      price_base_type: "HT",
+      desc: produit.label || "Produit",
+      product_type: 0
+    };
+
+    console.log('Données envoyées à l\'API :', ligneCommande);
+
+    // Envoi de la requête POST
+    const response = await axios.post(
+      `http://localhost:7979/dolibarr/htdocs/api/index.php/orders/${commandeId}/lines`,
+      ligneCommande,
+      {
+        headers: {
+          'DOLAPIKEY': '8a8MsnQGo371to4oVLWk552rIhNUFIt8',
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    console.log('Réponse de l\'API après ajout :', response.data);
+    alert(`Produit "${produit.label}" ajouté au panier.`);
+  } catch (error) {
+    console.error('Erreur lors de l\'ajout au panier :', error);
+    console.error('Détails de l\'erreur:', error.response ? error.response.data : error.message);
+    alert('Erreur lors de l\'ajout au panier. Veuillez réessayer.');
+  }
+},
     // ===== FONCTIONS RELATIVES AUX NOTES =====
     getCurrentNote(produit) {
       // Vérifie si le produit a une note dans ses options
@@ -415,7 +459,7 @@ export default {
         :key="produit.id"
         :produit="produit"
         @update-note="updateNote"
-        @ajouter="ajouterAuPanier(produit)"
+        @ajouter="ajouterAuPanier"
       >
         <template #categorie>
           {{ produit.categorieLabel }}

@@ -6,6 +6,7 @@ import panier from '../views/Panier.vue'
 import Inscription from '../views/Inscription.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Commande from '../views/Commande.vue'
+import Facture from '../views/Facture.vue'
 
 
 const routes = [
@@ -15,7 +16,9 @@ const routes = [
   { path: '/panier', name: 'Panier', component: panier },
   { path: '/inscription', name: 'Inscriptrion', component: Inscription },
   { path: '/dashboard', name: 'Dashboard', component: Dashboard},
-  { path:  '/commande' , name: 'Commande' , component: Commande} 
+  { path:  '/commande' , name: 'Commande' , component: Commande}, 
+  { path:  '/facture' , name: 'Facture' , component: Facture} 
+
 
 ]
 

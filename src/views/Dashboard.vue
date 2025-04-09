@@ -283,6 +283,49 @@ export default {
         return sum + parseFloat(commande.total_ttc || 0);
       }, 0);
     },
+
+    calculateProductRatingStats(produits) {
+  const stats = {
+    averageRating: 0,
+    highestRatedProduct: null,
+    lowestRatedProduct: null,
+  };
+
+  const ratedProducts = produits.filter(
+    (produit) => produit.array_options && produit.array_options.options_note
+  );
+
+  if (ratedProducts.length === 0) {
+    return stats; // Aucun produit noté
+  }
+
+  let totalRating = 0;
+  let highestRating = -Infinity;
+  let lowestRating = Infinity;
+
+  ratedProducts.forEach((produit) => {
+    const notes = produit.array_options.options_note
+      .split(',')
+      .map(Number);
+    const average = notes.reduce((sum, note) => sum + note, 0) / notes.length;
+
+    totalRating += average;
+
+    if (average > highestRating) {
+      highestRating = average;
+      stats.highestRatedProduct = produit;
+    }
+
+    if (average < lowestRating) {
+      lowestRating = average;
+      stats.lowestRatedProduct = produit;
+    }
+  });
+
+  stats.averageRating = (totalRating / ratedProducts.length).toFixed(2);
+
+  return stats;
+},
     
     filterCommandes(commandes, produitsMap, categoriesMap) {
       // Filtrer les commandes par statut
@@ -465,6 +508,7 @@ export default {
       
       return ((this.commandesPayees.length / total) * 100).toFixed(2);
     },
+    
     
     initCharts() {
       // Détruire les charts existants pour éviter les doublons
